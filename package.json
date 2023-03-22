@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx src"
   },
   "dependencies": {
     "@types/node": "18.15.5",
@@ -14,9 +14,17 @@
     "@types/react-dom": "18.0.11",
     "eslint": "8.36.0",
     "eslint-config-next": "13.2.4",
+    "framer-motion": "^10.8.4",
     "next": "13.2.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "typescript": "5.0.2"
+  },
+  "devDependencies": {
+    "@tinkin/eslint-config": "^1.0.0",
+    "autoprefixer": "^10.4.14",
+    "jest": "^29.5.0",
+    "postcss": "^8.4.21",
+    "tailwindcss": "^3.2.7"
   }
 }
