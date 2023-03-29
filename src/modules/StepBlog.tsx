@@ -8,9 +8,7 @@ export const StepBlog = () => {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const data = await fetch('http://localhost:3000/api/blogs').then((res) =>
-        res.json()
-      )
+      const data = await fetch(`/api/blogs`).then((res) => res.json())
 
       setPosts(data)
     }

@@ -16,9 +16,7 @@ export const getBlogs = async () => {
         guid: '1',
         title: 'Como hacer un blog con Next.js y Typescript',
         date: '2020-05-01T00:00:00.000Z',
-        description:
-          'Hoy hablamos de como hacer un blog con Next.js y Typescript',
-        url: 'https://medium.com/@leninner',
+        link: 'https://medium.com/@leninner',
       },
     ]
   }
