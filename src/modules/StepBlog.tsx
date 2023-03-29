@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Card, ICardProps } from '../components/Card'
-import { getBlogs } from '../services/getBlogs'
 
 export const StepBlog = () => {
   const [posts, setPosts] = useState<{
@@ -9,14 +8,15 @@ export const StepBlog = () => {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const data = await getBlogs()
+      const data = await fetch('http://localhost:3000/api/blogs').then((res) =>
+        res.json()
+      )
+
       setPosts(data)
     }
 
     fetchPosts()
   }, [])
-
-  console.log(posts)
 
   return (
     <section
@@ -29,7 +29,7 @@ export const StepBlog = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-center w-full md:gap-0 gap-5">
         {posts.map((post: ICardProps) => (
-          <Card key={post.id} {...post} />
+          <Card key={post.guid} {...post} />
         ))}
       </div>
     </section>
