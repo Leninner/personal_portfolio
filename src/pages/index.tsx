@@ -11,9 +11,11 @@ const Home = () => (
       <link rel="icon" href="/favicon.ico" />
     </Head>
 
-    <StepIntroduction />
-    <StepBlog />
-    <StepIntroduction />
+    <main className="scroll-smooth">
+      <StepIntroduction />
+      <StepBlog />
+      <StepIntroduction />
+    </main>
   </>
 )
 

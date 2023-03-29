@@ -7,6 +7,7 @@ export const getBlogs = async () => {
   const parser = new Parser()
   try {
     const { items } = await parser.parseURL('https://medium.com/feed/@leninner')
+    console.log(items)
     const lastArticles = items.slice(START, END)
 
     return lastArticles
