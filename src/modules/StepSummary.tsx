@@ -1,7 +1,7 @@
 import { Button } from '../components/Button'
 
 export const StepSummary = () => (
-  <div className="h-screen flex flex-col md:flex-row justify-between items-center md:h-[680px] md:px-[8.33vw] w-full py-10 gap-5">
+  <div className="h-screen flex flex-col md:flex-row justify-between items-center md:h-[680px] md:px-[8.33vw] w-full py-10 gap-5 my-10">
     <div className="flex-1">
       <h1 className="text-4xl font-bold mb-5">
         La juventud eterna para el código de tu negocio
@@ -22,8 +22,12 @@ export const StepSummary = () => (
       />
     </div>
 
-    <div className="flex-1 grid place-content-end">
-      <img src="" alt="" className="w-96 h-96 rounded-full bg-red-400" />
+    <div className="flex-1 grid md:place-content-end place-content-center">
+      <img
+        src=""
+        alt=""
+        className="md:w-96 md:h-96 rounded-full bg-red-400 w-72 h-72"
+      />
     </div>
   </div>
 )
