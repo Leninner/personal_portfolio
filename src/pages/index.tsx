@@ -1,6 +1,8 @@
 import Head from 'next/head'
+import { Layout } from '../modules/Layout'
 import { StepBlog } from '../modules/StepBlog'
 import { StepIntroduction } from '../modules/StepIntroduction'
+import { StepSummary } from '../modules/StepSummary'
 
 const Home = () => (
   <>
@@ -11,11 +13,11 @@ const Home = () => (
       <link rel="icon" href="/favicon.ico" />
     </Head>
 
-    <main className="scroll-smooth">
+    <Layout>
       <StepIntroduction />
       <StepBlog />
-      <StepIntroduction />
-    </main>
+      <StepSummary />
+    </Layout>
   </>
 )
 
