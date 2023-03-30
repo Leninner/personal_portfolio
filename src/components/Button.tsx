@@ -7,6 +7,7 @@ interface IButtonProps {
   onClick?: () => void
   href?: string
   variant?: Variants
+  canDownload?: boolean
 }
 
 export const Button = (props: IButtonProps) => {
@@ -24,7 +25,12 @@ export const Button = (props: IButtonProps) => {
 
   if (props.type === 'anchor') {
     return (
-      <a href={props.href} className={buttonClasses}>
+      <a
+        href={props.href}
+        className={buttonClasses}
+        target="_blank"
+        rel="noreferrer"
+      >
         {props.text}
       </a>
     )
