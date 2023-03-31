@@ -1,7 +1,7 @@
 import { Button } from '../components/Button'
 
 export const StepSummary = () => (
-  <div className="h-screen flex flex-col md:flex-row justify-between items-center md:h-[680px] md:px-[8.33vw] w-full py-10 gap-5 my-10">
+  <div className="h-screen flex flex-col md:flex-row justify-between items-center md:h-2/3 md:px-[8.33vw] w-full py-10 gap-5 my-10">
     <div className="flex-1">
       <h1 className="text-4xl font-bold mb-5">
         La juventud eterna para equipos altamente efectivos
