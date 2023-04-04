@@ -4,6 +4,10 @@ interface LayoutProps {
   children: React.ReactNode
 }
 
+export interface CommonProps {
+  extraStyle?: string
+}
+
 export const Layout = ({ children }: LayoutProps) => (
   <>
     <Head>

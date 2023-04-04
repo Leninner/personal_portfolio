@@ -3,6 +3,7 @@ import { Layout } from '../modules/Layout'
 import { StepBlog } from '../modules/StepBlog'
 import { StepIntroduction } from '../modules/StepIntroduction'
 import { StepSummary } from '../modules/StepSummary'
+import { StepSkills } from '../modules/StepSkills'
 
 const Home = () => (
   <>
@@ -17,6 +18,7 @@ const Home = () => (
       <StepIntroduction />
       <StepBlog />
       <StepSummary />
+      <StepSkills />
     </Layout>
   </>
 )
