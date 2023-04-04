@@ -11,7 +11,7 @@ export interface ICardProps {
 
 export const Card = (props: ICardProps) => {
   const { title, pubDate, link, extraClasses = '' } = props
-  const cardStyles = `w-full md:w-[30%] bg-white rounded-sm shadow-lg shadow-[#f9ef2e77] p-10 text-black ${extraClasses}`
+  const cardStyles = `w-full md:w-[30%] bg-white rounded-sm shadow-md shadow-[#f9ef2e77] p-10 text-black ${extraClasses}`
 
   return (
     <div className={cardStyles}>

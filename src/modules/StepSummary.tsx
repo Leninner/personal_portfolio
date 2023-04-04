@@ -1,7 +1,10 @@
 import { Button } from '../components/Button'
+import { CommonProps } from './Layout'
 
-export const StepSummary = () => (
-  <div className="h-screen flex flex-col md:flex-row justify-between items-center md:h-2/3 md:px-[8.33vw] w-full py-10 gap-5 my-10">
+export const StepSummary = (props: CommonProps) => (
+  <div
+    className={`h-screen flex flex-col md:flex-row justify-between items-center md:h-2/3 w-full py-10 gap-5 my-10 ${props.extraStyle}`}
+  >
     <div className="flex-1">
       <h1 className="text-4xl font-bold mb-5">
         La juventud eterna para equipos altamente efectivos

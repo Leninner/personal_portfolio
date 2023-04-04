@@ -18,7 +18,7 @@ export const StepBlog = () => {
 
   return (
     <section
-      className="flex flex-col justify-evenly items-center md:h-[680px] bg-[#1a1b1c] text-white md:px-[8.33vw] w-full py-10 gap-5 shadow-lg shadow-[#5f5f5377]"
+      className={`flex flex-col justify-evenly items-center md:h-[680px] bg-[#1a1b1c] text-white w-full py-10 gap-5 shadow-lg shadow-[#5f5f5377]`}
       id="blog"
     >
       <h1 className="md:text-3xl text-xl font-bold">
