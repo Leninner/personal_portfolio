@@ -22,7 +22,8 @@ export const StepBlog = () => {
       id="blog"
     >
       <h1 className="md:text-3xl text-xl font-bold">
-        Mira mis <span className="text-[#f9ef2e]">últimos artículos</span>
+        Lee lo que he estado{' '}
+        <span className="text-[#f9ef2e]">escribiendo últimamente</span>
       </h1>
 
       <div className="flex flex-col md:flex-row justify-between items-center w-full md:gap-0 gap-5">
