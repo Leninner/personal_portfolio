@@ -11,14 +11,9 @@ module.exports = {
   ],
   theme: {
     extend: {
-      keyframes: {
-        upAndDown: {
-          '0%, 100%': { transform: 'translateY(5px)' },
-          '50%': { transform: 'translateY(-10px)' },
-        },
-      },
-      animation: {
-        upAndDown: 'upAndDown 1s ease-in-out infinite',
+      colors: {
+        'yellow-primary': '#f9ef2e',
+        'black-primary': '#1a1b1c',
       },
     },
   },

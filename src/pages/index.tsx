@@ -4,6 +4,7 @@ import { StepBlog } from '../modules/StepBlog'
 import { StepIntroduction } from '../modules/StepIntroduction'
 import { StepSummary } from '../modules/StepSummary'
 import { StepSkills } from '../modules/StepSkills'
+import { StepProjects } from '../modules/StepProjects'
 
 const Home = () => (
   <>
@@ -16,6 +17,7 @@ const Home = () => (
 
     <Layout>
       <StepIntroduction />
+      <StepProjects />
       <StepBlog />
       <StepSummary />
       <StepSkills />

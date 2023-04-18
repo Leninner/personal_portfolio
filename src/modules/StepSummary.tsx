@@ -7,10 +7,10 @@ export const StepSummary = (props: CommonProps) => (
   >
     <div className="flex-1">
       <h1 className="text-4xl font-bold mb-5">
-        La juventud eterna para equipos altamente efectivos
+        Conóceme: La juventud eterna para equipos altamente efectivos
       </h1>
 
-      <div className="text-xl text-gray-600">
+      <div className="text-xl text-gray-800">
         <p>
           Soy un profesional que combina juventud, pasión, experiencia y
           liderazgo para alcanzar mis objetivos laborales. Estas cualidades me

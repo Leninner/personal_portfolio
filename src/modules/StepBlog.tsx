@@ -18,8 +18,7 @@ export const StepBlog = () => {
 
   return (
     <section
-      className={`flex flex-col justify-evenly items-center md:h-[680px] bg-[#1a1b1c] text-white w-full py-10 gap-5 shadow-lg shadow-[#5f5f5377]`}
-      id="blog"
+      className={`flex flex-col justify-evenly items-center md:h-[680px] bg-black-primary text-white w-full py-10 gap-5 shadow-lg shadow-[#5f5f5377]`}
     >
       <h1 className="md:text-3xl text-xl font-bold">
         Lee lo que he estado{' '}

@@ -43,3 +43,11 @@ main > * {
     padding: 0 5vw;
   }
 }
+
+.bg {
+  background-color: rgba(0, 0, 0, 0.3);
+  position: absolute;
+  inset: 0;
+  filter: blur(20px);
+  z-index: -1;
+}
