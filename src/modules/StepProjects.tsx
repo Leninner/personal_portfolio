@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react'
 import { ProjectCard } from '../components/ProjectCard'
 
 export const StepProjects = () => {
-  const projects = [
+  const [projects, setProjects] = useState([
     {
       id: 1,
       title: 'Leninner',
@@ -38,7 +39,17 @@ export const StepProjects = () => {
       description: 'My personal website',
       image: '/images/leninner.png',
     },
-  ]
+  ])
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const data = await fetch(`/api/blogs`).then((res) => res.json())
+
+      setProjects(data)
+    }
+
+    fetchPosts()
+  }, [])
 
   return (
     <section
