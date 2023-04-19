@@ -63,7 +63,7 @@ export const StepProjects = () => {
         </span>
       </h1>
 
-      <div className="flex flex-wrap gap-5 md:gap-10 justify-center md:justify-between py-10">
+      <div className="grid grid-flow-row sm:grid-cols-2 md:grid-cols-3 gap-5 md:gap-10 py-10">
         {projects.map((project) => (
           <ProjectCard {...project} key={project.id} />
         ))}
