@@ -15,13 +15,11 @@ export const IconWrapper = ({ iconProps }: IconWrapperProps) => {
   return (
     <IconContext.Provider
       value={{
-        // size: '10em',
-        // color: '#f9ef2e',
         className: size,
       }}
     >
       <div
-        className="flex flex-col text-lg text-[#242a26] items-center hover:text-[#424627] font-medium cursor-pointer"
+        className="flex flex-col text-lg text-[#242a26] items-center hover:text-[#424627] font-medium cursor-pointer gap-5"
         onClick={() => {
           if (link) {
             window.open(link, '_blank')

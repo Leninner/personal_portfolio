@@ -3,7 +3,7 @@ import { CommonProps } from './Layout'
 
 export const StepSummary = (props: CommonProps) => (
   <div
-    className={`h-screen flex flex-col md:flex-row justify-between items-center md:h-2/3 w-full py-10 gap-5 my-10 ${props.extraStyle}`}
+    className={`flex flex-col md:flex-row justify-between items-center w-full py-20 gap-5 ${props.extraStyle}`}
   >
     <div className="flex-1">
       <h1 className="text-4xl font-bold mb-5">
@@ -18,7 +18,7 @@ export const StepSummary = (props: CommonProps) => (
           además de guiar a mi equipo hacia el éxito.
         </p>
 
-        <p>
+        <p className="hidden md:block">
           Además, me esfuerzo por mantener buenas prácticas de programación para
           garantizar la calidad y eficiencia de cada proyecto.
         </p>

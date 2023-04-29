@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Card, ICardProps } from '../components/Card'
+import { Card, ICardProps } from '../components/BlogCard'
 
 export const StepBlog = () => {
   const [posts, setPosts] = useState<{
@@ -18,14 +18,14 @@ export const StepBlog = () => {
 
   return (
     <section
-      className={`flex flex-col justify-evenly items-center md:h-[680px] bg-black-primary text-white w-full py-10 gap-5 shadow-lg shadow-[#5f5f5377]`}
+      className={`bg-black-primary text-white w-full flex flex-col gap-16 shadow-lg shadow-[#5f5f5377] py-20`}
     >
-      <h1 className="md:text-3xl text-xl font-bold">
+      <h1 className="md:text-3xl text-xl font-bold md:w-1/4">
         Lee lo que he estado{' '}
         <span className="text-[#f9ef2e]">escribiendo últimamente</span>
       </h1>
 
-      <div className="flex flex-col md:flex-row justify-between items-center w-full md:gap-0 gap-5">
+      <div className="w-full gap-5 flex flex-col">
         {posts.map((post: ICardProps) => (
           <Card key={post.guid} {...post} />
         ))}

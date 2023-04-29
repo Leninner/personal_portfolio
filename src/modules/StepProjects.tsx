@@ -53,10 +53,10 @@ export const StepProjects = () => {
 
   return (
     <section
-      className="flex flex-col justify-evenly bg-gray-100 items-center md:min-h-[680px] w-full py-10 gap-5 shadow-lg shadow-[#5f5f5377]"
+      className="flex flex-col justify-evenly items-center w-full py-20 gap-5 shadow-lg shadow-[#5f5f5377]"
       id="projects"
     >
-      <h1 className="md:text-3xl text-xl font-medium text-center">
+      <h1 className="md:text-3xl text-xl font-medium w-full">
         Expandiendo mis límites,{' '}
         <span className="font-bold py-5 px-2">
           aprendiendo cada día algo nuevo

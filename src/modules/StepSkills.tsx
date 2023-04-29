@@ -3,7 +3,7 @@ import { ICONS } from '../constants/icons'
 
 export const StepSkills = () => (
   <section
-    className={`flex flex-col justify-center items-center md:h-[500px] bg-gray-100 w-full py-10 gap-5 text-center`}
+    className={`flex flex-col justify-center items-center bg-gray-100 w-full py-20 gap-5 text-center`}
   >
     <h1 className="md:text-3xl text-xl font-bold text-[#333]">
       ¡Habilidades clave para el éxito en el mundo actual!
