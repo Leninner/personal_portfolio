@@ -1,49 +1,13 @@
 import { useEffect, useState } from 'react'
-import { ProjectCard } from '../components/ProjectCard'
+import { ProjectCardMemo } from '../components/ProjectCard'
+import { IProject } from '../services/getProjects'
 
 export const StepProjects = () => {
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      title: 'Leninner',
-      description: 'My personal website',
-      image: '/images/leninner.png',
-    },
-    {
-      id: 2,
-      title: 'Leninner',
-      description: 'My personal website',
-      image: '/images/leninner.png',
-    },
-    {
-      id: 3,
-      title: 'Leninner',
-      description: 'My personal website',
-      image: '/images/leninner.png',
-    },
-    {
-      id: 4,
-      title: 'Leninner',
-      description: 'My personal website',
-      image: '/images/leninner.png',
-    },
-    {
-      id: 5,
-      title: 'Leninner',
-      description: 'My personal website',
-      image: '/images/leninner.png',
-    },
-    {
-      id: 6,
-      title: 'Leninner',
-      description: 'My personal website',
-      image: '/images/leninner.png',
-    },
-  ])
+  const [projects, setProjects] = useState<IProject[]>([])
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const data = await fetch(`/api/blogs`).then((res) => res.json())
+      const { data } = await fetch(`/api/projects`).then((res) => res.json())
 
       setProjects(data)
     }
@@ -53,19 +17,16 @@ export const StepProjects = () => {
 
   return (
     <section
-      className="flex flex-col justify-evenly items-center w-full py-20 gap-5 shadow-lg shadow-[#5f5f5377]"
+      className="flex flex-col py-20 gap-16 shadow-lg shadow-[#5f5f5377]"
       id="projects"
     >
-      <h1 className="md:text-3xl text-xl font-medium w-full">
-        Expandiendo mis límites,{' '}
-        <span className="font-bold py-5 px-2">
-          aprendiendo cada día algo nuevo
-        </span>
+      <h1 className="md:text-3xl text-xl font-medium md:w-1/2">
+        Mira ya mismo mis proyectos
       </h1>
 
-      <div className="grid grid-flow-row sm:grid-cols-2 md:grid-cols-3 gap-5 md:gap-10 py-10">
-        {projects.map((project) => (
-          <ProjectCard {...project} key={project.id} />
+      <div className="flex gap-5 flex-wrap">
+        {projects?.map((project) => (
+          <ProjectCardMemo {...project} key={project.id} />
         ))}
       </div>
     </section>
