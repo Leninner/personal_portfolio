@@ -1,0 +1,59 @@
+---
+import BaseHead from "../components/BaseHead.astro";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+import Skill from "../components/Skill.astro";
+import { LANGUAJES } from "../consts";
+import { Icon } from "astro-icon";
+
+const {
+  ENGLISH: { SITE_TITLE, SITE_DESCRIPTION },
+} = LANGUAJES;
+
+export const ICONS = {
+  nextjs: {
+    icon: "file-icons:nextjs",
+    name: "NextJS",
+    link: "https://nextjs.org/",
+  },
+  typescript: {
+    icon: "mdi:language-typescript",
+    name: "TypeScript",
+    link: "https://www.typescriptlang.org/",
+  },
+  aws: {
+    icon: "mdi:aws",
+    name: "AWS",
+    link: "https://aws.amazon.com/es/",
+  },
+  react: {
+    icon: "mdi:react",
+    name: "React",
+    link: "https://es.reactjs.org/",
+  },
+  mongodb: {
+    icon: "simple-icons:mongodb",
+    name: "MongoDB",
+    link: "https://www.mongodb.com/es",
+  },
+  postgresql: {
+    icon: "simple-icons:postgresql",
+    name: "PostgreSQL",
+    link: "https://www.postgresql.org/",
+  },
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+  </head>
+
+  <body>
+    <Header />
+
+
+    <Footer />
+  </body>
+</html>
