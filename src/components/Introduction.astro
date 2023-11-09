@@ -1,0 +1,38 @@
+---
+import Icon from "astro-icon";
+---
+
+<section class="flex justify-between items-center my-10 gap-10 w-full">
+  <div class="ml-[10%]">
+    <h1 class="text-4xl md:text-6xl lg:text-8xl font-bold tracking-wider">
+      Hi I'm <span class="text-accent">Lenin</span>
+    </h1>
+
+    <p class="text-xl text-slate-600">
+      I'm a software developer with a passion for building things for a good
+      future.
+    </p>
+    <a href="/about">Let's collaborate <span> &RightArrow;</span></a>
+  </div>
+
+  <div class="hidden md:flex flex-col gap-4">
+    <div class="w-[1px] h-60 bg-slate-500 mx-5"></div>
+
+    <div>
+      <a href="https://www.linkedin.com/in/leninner" target="_blank">
+        <Icon
+          name="mdi:linkedin"
+          class="w-10 h-10 text-slate-500 hover:text-black duration-200 ease-in-out"
+        />
+      </a>
+
+      <a href="https://www.github.com/leninner" target="_blank">
+        <Icon
+          name="mdi:github"
+          class="w-10 h-10 text-slate-500 hover:text-black duration-200 ease-in-out"
+        />
+      </a>
+    </div>
+    <div class="w-[1px] h-60 bg-slate-500 mx-5"></div>
+  </div>
+</section>

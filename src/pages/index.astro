@@ -1,97 +1,34 @@
 ---
-import BaseHead from "../components/BaseHead.astro";
-import Footer from "../components/Footer.astro";
-import Header from "../components/Header.astro";
+import Introduction from "../components/Introduction.astro";
 import Snowball from "../components/Snowball.astro";
-import { LANGUAJES } from "../consts";
-import { Icon } from "astro-icon";
-
-const {
-  ENGLISH: { SITE_TITLE, SITE_DESCRIPTION },
-} = LANGUAJES;
-
-export const ICONS = {
-  nextjs: {
-    icon: "file-icons:nextjs",
-    name: "NextJS",
-    link: "https://nextjs.org/",
-  },
-  typescript: {
-    icon: "mdi:language-typescript",
-    name: "TypeScript",
-    link: "https://www.typescriptlang.org/",
-  },
-  aws: {
-    icon: "mdi:aws",
-    name: "AWS",
-    link: "https://aws.amazon.com/es/",
-  },
-  react: {
-    icon: "mdi:react",
-    name: "React",
-    link: "https://es.reactjs.org/",
-  },
-  mongodb: {
-    icon: "simple-icons:mongodb",
-    name: "MongoDB",
-    link: "https://www.mongodb.com/es",
-  },
-  postgresql: {
-    icon: "simple-icons:postgresql",
-    name: "PostgreSQL",
-    link: "https://www.postgresql.org/",
-  },
-};
+import Layout from "../layouts/Layout.astro";
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-  </head>
+<Layout>
+  <Snowball variant="primary" size="lg" position="top-24 right-0" />
+  <Snowball variant="tertiary" size="lg" position="top-40 left-10" />
+  <Snowball variant="warning" size="lg" position="top-2/4 right-1/3" />
 
-  <body class="cursor-default flex flex-col items-center">
-    <Header />
+  <Introduction />
 
-    <Snowball variant="primary" size="lg" position="top-24 right-0" />
-    <Snowball variant="tertiary" size="lg" position="top-40 left-10" />
-    <Snowball variant="warning" size="lg" position="top-2/4 right-1/3" />
+  <section class="flex flex-col md:flex-row items-center justify-between gap-5 md:gap-10 xl:gap-24">
+    <div class="w-full lg:w-1/3 h-[600px]">
+      <img
+        src="https://plus.unsplash.com/premium_photo-1675034393381-7e246fc40755?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTd8fHByb2ZpbGV8ZW58MHx8MHx8fDA%3D"
+        alt=""
+        class="w-full h-full object-cover rounded-xl shadow-xl"
+      />
+    </div>
 
-    <section class="flex justify-between items-center my-10 px-10 container xl gap-10">
-      <div class="ml-[10%]">
-        <h1 class="text-4xl md:text-6xl lg:text-8xl font-bold tracking-wider">
-          Hi I'm <span class="text-accent">Lenin</span>
-        </h1>
-
-        <p class="text-xl text-slate-600">
-          I'm a software developer with a passion for building things for a good
-          future.
-        </p>
-        <a href="/about">Let's collaborate <span> &RightArrow;</span></a>
-      </div>
-
-      <div class="hidden md:flex flex-col gap-4">
-        <div class="w-[1px] h-60 bg-slate-500 mx-5"></div>
-
-        <div>
-          <a href="https://www.linkedin.com/in/leninner" target="_blank">
-            <Icon
-              name="mdi:linkedin"
-              class="w-10 h-10 text-slate-500 hover:text-black duration-200 ease-in-out"
-            />
-          </a>
-
-          <a href="https://www.github.com/leninner" target="_blank">
-            <Icon
-              name="mdi:github"
-              class="w-10 h-10 text-slate-500 hover:text-black duration-200 ease-in-out"
-            />
-          </a>
-        </div>
-        <div class="w-[1px] h-60 bg-slate-500 mx-5"></div>
-      </div>
-    </section>
-
-    <Footer />
-  </body>
-</html>
+    <div class="w-full md:w-2/3">
+      <h2 class="text-4xl lg:text-6xl tracking-wider font-bold w-full lg:w-2/3 leading-tight">
+        PASSIONATE TO CRAFT AND DESIGNING AN HUMAN PRODUCT
+      </h2>
+      <p class="text-slate-800">
+        Sound's Interesting? <span class="text-accent">
+          <a href="/blog">Lest's talk</a>
+        </span>
+      </p>
+    </div>
+  </section>
+</Layout>
