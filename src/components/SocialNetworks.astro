@@ -1,0 +1,37 @@
+---
+const BOX_STYLES =
+  "text-lg py-2 px-6 rounded-full border border-slate-600 flex items-center justify-center md:text-3xl hover:shadow-lg duration-200 ease-in";
+
+const SOCIALS = [
+  {
+    name: "github",
+    url: "https://www.github.com/leninner",
+  },
+  {
+    name: "linkedin",
+    url: "https://www.linkedin.com/in/leninner",
+  },
+  {
+    name: "twitter",
+    url: "https://twitter.com/_leninner",
+  },
+];
+---
+
+<section
+  class="container xl lg md sm flex flex-wrap justify-center gap-5 md:gap-20 my-10 md:my-24"
+>
+  {
+    SOCIALS.map(({ name, url }) => (
+      <div class={BOX_STYLES}>
+        <a
+          class="text-slate-900 hover:text-slate-900"
+          target="_blank"
+          href={url}
+        >
+          {name.toUpperCase()}
+        </a>
+      </div>
+    ))
+  }
+</section>
