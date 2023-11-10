@@ -15,11 +15,11 @@ const {
     <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
   </head>
 
-  <body class="cursor-default flex flex-col items-center">
-    <main class="container xl px-10">
-      <Header />
-      <slot />
-      <Footer />
-    </main>
+  <body class="cursor-default flex flex-col items-center w-full">
+    <Header />
+    
+    <slot />
+
+    <Footer />
   </body>
 </html>

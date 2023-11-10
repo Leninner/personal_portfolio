@@ -31,9 +31,6 @@
 }
 body {
 	font-family: 'Atkinson', sans-serif;
-	margin: 0;
-	padding: 0;
-	text-align: left;
 	background: linear-gradient(var(--gray-gradient)) no-repeat;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
@@ -120,9 +117,6 @@ hr {
 @media (max-width: 720px) {
 	body {
 		font-size: 18px;
-	}
-	main {
-		padding: 1em;
 	}
 }
 

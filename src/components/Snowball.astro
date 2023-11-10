@@ -28,8 +28,8 @@ const VARIANTS = {
   dark: "from-gray-300 to-gray-700",
 };
 const SIZES = {
-  sm: "w-24 h-24",
-  lg: "w-56 h-56",
+  sm: "w-24 h-24 md:w-32 md:h-32",
+  lg: "md:w-56 md:h-56 w-40 h-40",
 };
 const HIDDEN = {
   true: "hidden",
@@ -39,7 +39,7 @@ const HIDDEN = {
 
 <div
   class:list={[
-    "rounded-full bg-gradient-to-r blur-xl md:opacity-50 opacity-20",
+    "rounded-full bg-gradient-to-r blur-xl md:opacity-50 opacity-20 z-[-1]",
     VARIANTS[variant],
     SIZES[size],
     position,

@@ -10,14 +10,20 @@ const posts = (await getCollection("blog")).sort(
 
 <Layout>
   <section>
-    <ul class="w-full flex flex-wrap gap-2 md:gap-8 m-0 p-0">
+    <ul class="container xl lg md sm flex flex-wrap gap-2 md:gap-8 m-0 p-0">
       {
         posts.map((post) => (
           <li class="w-full md:w-[calc(50%-1rem)] duration-200 ease-in first:w-full first:md:mb-4 flex justify-center text-center">
             <a href={`/blog/${post.slug}/`}>
-              <img src={post.data.heroImage} alt="" class="w-full hover:shadow hover:shadow-gray-900 duration-200" />
-              
-              <h4 class="text-xl md:text-3xl mt-2 md:mt-4">{post.data.title}</h4>
+              <img
+                src={post.data.heroImage}
+                alt=""
+                class="w-full hover:shadow hover:shadow-gray-900 duration-200"
+              />
+
+              <h4 class="text-xl md:text-3xl mt-2 md:mt-4">
+                {post.data.title}
+              </h4>
 
               <p class="text-lg md:text-xl">
                 <FormattedDate date={post.data.pubDate} />
