@@ -31,22 +31,10 @@
 }
 body {
 	font-family: 'Atkinson', sans-serif;
-	background: linear-gradient(var(--gray-gradient)) no-repeat;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
-	color: rgb(var(--gray-dark));
 	font-size: 20px;
 	line-height: 1.7;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-	color: rgb(var(--black));
-	line-height: 1.2;
 }
 
 strong,
