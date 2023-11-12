@@ -12,7 +12,7 @@ const { title, type } = Astro.props;
 <html lang="en">
   <head>
     <BaseHead title={title} description={title} />
-    <style>
+    <style is:inline>
       .hero-image {
         width: 100%;
       }
@@ -38,9 +38,97 @@ const { title, type } = Astro.props;
       .title h1 {
         margin: 0 0 0.5em 0;
       }
-
+      .date {
+        margin-bottom: 0.5em;
+        color: rgb(var(--gray));
+      }
       .last-updated-on {
         font-style: italic;
+      }
+
+      .prose h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        margin: 35px 0;
+        padding: 0;
+      }
+
+      .prose h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .prose h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .prose h3 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .prose h4 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .prose ul {
+        list-style: disc;
+        padding-left: 1.5em;
+      }
+
+      .prose ul > li {
+        margin-bottom: 0.5em;
+      }
+
+      .prose ol > ul {
+        margin-bottom: 0;
+        padding-left: 3rem;
+      }
+
+      .prose ol {
+        list-style: decimal;
+        padding-left: 1.5em;
+        margin-bottom: 0 !important;
+      }
+
+      .prose a {
+        text-decoration: none;
+      }
+
+      .prose a:hover {
+        text-decoration: underline;
+      }
+
+      .prose p {
+        margin-bottom: 1em;
+      }
+
+      .prose li {
+        margin-bottom: 0.5em;
+      }
+
+      .prose pre {
+        font-size: 0.9em;
+        margin: 25px 0;
+      }
+
+
+
+      @media (max-width: 720px) {
+        .prose {
+          max-width: 100%;
+          width: 100%;
+          padding: 0;
+        }
       }
     </style>
   </head>
@@ -48,13 +136,13 @@ const { title, type } = Astro.props;
   <body class="cursor-default flex flex-col items-center">
     <Header />
 
-    <main class="container xl">
+    <main class="container xl lg md sm px-5">
       <article>
         <div class="prose">
           <div class="title">
             <h1>{title}</h1>
-            <hr />
             <p>{type}</p>
+            <hr />
           </div>
           <slot />
         </div>

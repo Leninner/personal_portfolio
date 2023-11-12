@@ -14,11 +14,11 @@ export async function getStaticPaths() {
 type Props = CollectionEntry<"projects">;
 
 const {
-  data: { title, type, description },
+  data: { title, type, description, releaseDate },
 } = Astro.props;
 const { Content } = await Astro.props.render();
 ---
 
-<ProjectLayout title={title} type={type} description={description}>
+<ProjectLayout title={title} type={type} description={description} releaseDate={releaseDate}>
   <Content />
 </ProjectLayout>
