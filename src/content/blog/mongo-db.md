@@ -3,6 +3,7 @@ title: "Mongo DB"
 description: "Mongo DB is a noSQL database that stores data in JSON-like documents."
 pubDate: "Nov 02 2022"
 heroImage: "/blog-placeholder-3.jpg"
+tags: ["cloud", "mongodb", "database", "nosql"]
 ---
 <h1>Mongo DB</h1>
 

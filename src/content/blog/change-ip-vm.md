@@ -3,6 +3,7 @@ title: "How to Change the IP Address of a Virtual Machine in AlmaLinux"
 description: "Sometimes you may need to change the IP address of a virtual machine in AlmaLinux. This can be done by editing the network configuration file and restarting the network service."
 pubDate: "Nov 05 2023"
 heroImage: "/blog-placeholder-3.jpg"
+tags: ["cloud", "infrastructure", "linux"]
 ---
 
 1. Edit the ip of a connection

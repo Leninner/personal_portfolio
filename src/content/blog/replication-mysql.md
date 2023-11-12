@@ -3,6 +3,7 @@ title: "Replication in MySQL"
 description: "Replication is a technique that allows us to have a copy of the data in another node. In this project we are going to implement replication in MySQL."
 pubDate: "Nov 02 2023"
 heroImage: "/blog-placeholder-2.jpg"
+tags: ["cloud", "infrastructure", "linux", "mysql", "replication"]
 ---
 Table of Contents
 
