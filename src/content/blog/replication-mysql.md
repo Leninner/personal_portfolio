@@ -316,6 +316,16 @@ You just need to run the following command on the other nodes
 START GROUP_REPLICATION;
 ```
 
+14. Remember that always you need to run the following command on the primary node to start the group replication
+
+  ```sql
+  SET GLOBAL group_replication_bootstrap_group = ON;
+  START GROUP_REPLICATION;
+  SET GLOBAL group_replication_bootstrap_group = OFF;
+  ```
+
+  - For example whe you shutdown all the nodes and you want to start the group replication again
+
 **GENERAL NOTE:** You may need to `bind ip addresses` to have the mysql group replication working properly. You can achieve this editing the `/etc/hosts` file on all nodes
 
 ```bash
