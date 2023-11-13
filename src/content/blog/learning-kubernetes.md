@@ -14,6 +14,8 @@ tags: ["cloud", "infrastructure", "kubernetes", "docker"]
   - [Example](#example)
 - [Minikube and Kubectl set-up](#minikube-and-kubectl-set-up)
   - [Main kubeclt commands](#main-kubeclt-commands)
+- [YAML configuration files for Kubernetes](#yaml-configuration-files-for-kubernetes)
+- [Demo](#demo)
 
 ## What is Kubernetes?
 
@@ -219,7 +221,7 @@ Requirements:
 
 ## Minikube and Kubectl set-up
 
-Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a `VM` on your laptop for users looking to try out Kubernetes or develop with it day-to-day.
+Minikube is a tool that makes it easy to run **Kubernetes locally**. Minikube runs a single-node Kubernetes cluster inside a `VM` on your laptop for users looking **to try out** Kubernetes or **develop with it day-to-day**.
 Runs Master Processes and Worker Processes on a single node.
 
 ![Minikube](/content/blog/kubernetes/minikube.png)
@@ -288,7 +290,7 @@ kubectl create deployment nginx-depl --image=nginx
 ![Kubectl basics](/content/blog/kubernetes/kubectl-basics.png)
 
   - The name of a Pod is the name of the deployment followed by the replicaset hash and the Pod hash
-    - namedeplyment-<replicaset hash>-<pod hash>
+    - **namedeployment-[replicaset hash]-[pod hash]**
     - Replicaset is managing the replicas of a Pod
 
 ![Layers](/content/blog/kubernetes/layers.png)
@@ -352,4 +354,92 @@ spec: # specification of the deployment
         image: nginx:1.16
         ports:
         - containerPort: 80
+```
+
+- Delete with a config file
+
+```bash
+kubectl delete -f <config-file>
+```
+
+## YAML configuration files for Kubernetes
+
+Each configuration file consist of 3 parts:
+
+- **metadata:** Specifies the name of the object and labels
+  - **labels:** Any key value pair that can be used to identify the object
+- **specification:** Specifies the desired state of the object. And its attributes are **specific** to the `kind` of object
+  - **selectors:** `matchLabels` is used to select the Pods that are going to be managed by this deployment.
+- **status:** Is Auto-generated and added by kubernetes. It makes sure that the **desired** and **actual** state of the object matches and continuously updates the status of the object. K8s knows the actual state by the `etcd` database which is the **brain** of the cluster
+
+> `etcd` holds the current status of any K8s component
+
+- In a `deployment kind`, inside `spec` we can see the `template` field that allows us to specify the configuration **of a Pod**
+- To connect a service to a deployment we must specify inside the `selector` field the **key value** that was specified in the main `metadata/label` field of the deployment file
+
+Example:
+
+- `nginx-deployment.yaml`
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: nginx-deployment
+  labels:
+    app: nginx # the same as the selector of the service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx # the same as the label of the deployment
+  template:
+    metadata:
+      labels:
+        app: nginx # the same as the selector of the service
+    spec:
+      containers: 
+      - name: nginx
+        image: nginx:1.16
+        ports:
+        - containerPort: 8080 # the same as the targetPort of the service
+```
+
+- `nginx-service.yaml`
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx # the same as the label of the deployment
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080 # the same as the containerPort of the deployment
+```
+
+## Demo
+
+I would like to complete this diagram:
+
+![Demo](/content/blog/kubernetes/demo.png)
+
+I need the following components:
+
+- A pod for mongodb
+- A pod for mongo-express
+- A ConfigMap for mongodb url
+- A secret for mongodb credentials
+- An internal service for mongodb
+- An external service for mongo-express
+
+![Demo flow](/content/blog/kubernetes/demo-flow.png)
+
+1. Deployment for mongodb
+
+```yaml
+
 ```
