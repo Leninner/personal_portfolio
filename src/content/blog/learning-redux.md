@@ -545,7 +545,7 @@ try {
     payload: response.data,
   });
 } catch (error) {
-  console.log(`Error: ${error.message}`); // Es una buena práctica saber del error
+  console.log(`Error: ${error.message}`);
 }
 ```
 
