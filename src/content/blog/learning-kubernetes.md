@@ -9,6 +9,11 @@ tags: ["cloud", "infrastructure", "kubernetes", "docker"]
 - [What is Kubernetes?](#what-is-kubernetes)
 - [Main components](#main-components)
 - [Architecture](#architecture)
+  - [Worker servers or Nodes](#worker-servers-or-nodes)
+  - [Master Nodes](#master-nodes)
+  - [Example](#example)
+- [Minikube and Kubectl set-up](#minikube-and-kubectl-set-up)
+  - [Main kubeclt commands](#main-kubeclt-commands)
 
 ## What is Kubernetes?
 
@@ -179,3 +184,172 @@ Important stuff:
 ![K8s components](/content/blog/kubernetes/deployments.png)
 
 ## Architecture
+
+K8s operates in a master-slave architecture. The master node is the brain of the cluster and the slave nodes are the workers.
+
+### Worker servers or Nodes
+
+- Each node has multiple Pods on it
+- 3 processes are running on each node:
+  - **kubelet:** is the agent that runs on each node in the cluster. It makes sure that the containers are running in a Pod. Starts the pod with a container inside
+  - **kube-proxy:** is a network proxy that runs on each node in your cluster, implementing part of the Kubernetes Service concept. Forwards traffic to the correct Pod
+  - **container runtime:** is the software that is responsible for running containers. K8s supports several container runtimes: Docker, containerd, CRI-O, and any implementation of the Kubernetes CRI (Container Runtime Interface)
+- Worker nodes do the actual work
+
+### Master Nodes
+
+- Are the responsible for the state management of the cluster and the worker nodes 
+- Has 4 processes running on every master node
+  - **Api Server**: It's used when a client wants to intereact with the cluster. It's the only component that interacts with the etcd database. Acts like a cluster gateway and also acts as a gatekeeper for authentication.
+  - **Scheduler**: It's responsible for distributing the creation of Pods across the nodes. The metric to determine where to place the Pod is the current usage of each node.
+  - **Controller manager**: It's responsible for the actual work. It's a daemon that runs in the background and is responsible for making sure that the actual state of the cluster matches the desired state. It's responsible for the replication of the Pods, the scaling of the Pods, the rolling updates, etc.
+  - **etcd**: Is the cluster brain and is a key/value store. Every change in the cluster get stored in the key value store. The application data isn't stored in `etcd` 
+
+![Master node](/content/blog/kubernetes/master-node.png)
+
+### Example
+
+![Example](/content/blog/kubernetes/sticky-example.png)
+
+Requirements:
+- Two master nodes
+- Three worker nodes
+
+> The master node requires less resources than the worker nodes
+
+## Minikube and Kubectl set-up
+
+Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a `VM` on your laptop for users looking to try out Kubernetes or develop with it day-to-day.
+Runs Master Processes and Worker Processes on a single node.
+
+![Minikube](/content/blog/kubernetes/minikube.png)
+
+Kubectl is a `command line tool` that allows you to run commands against Kubernetes clusters. You can use kubectl to deploy applications, inspect and manage cluster resources, and view logs.
+
+- To install kubectl, follow the instructions [here](https://kubernetes.io/docs/tasks/tools/)
+- To install minikube, follow the instructions [here](https://minikube.sigs.k8s.io/docs/start/)
+
+> Minikube needs `virtualization` enable and you can check it in linux with `egrep -o '(vmx|svm)' /proc/cpuinfo` and if you get an `vmx` or `svm` is enabled. On MacOs you can check it with `sysctl -a | grep machdep.cpu.features | grep VMX`
+
+> Also you need to have a `hypervisor` installed. For example, you can install `virtualbox`.
+
+I am going to create a cluster
+
+1. Starts the cluster. This command will use the default driver (docker) and will create a container with the name `minikube`
+
+```bash
+minikube start
+```
+
+2. You can check the status of minikube running `minikube status`
+
+![Minikube status](/content/blog/kubernetes/minikube-status.png)
+
+3. Get the nodes inside the created cluster
+
+```bash
+kubectl get nodes
+```
+  - Kubectl CLI is used for configuring the Minikube cluster
+  - Minikube CLI is used for starting and stopping the Minikube cluster
+
+### Main kubeclt commands
+
+- Get the nodes and see their status inside the cluster
+
+```bash
+kubectl get nodes
+```
+
+- Get the pods inside the cluster
+
+```bash
+kubectl get pods
+```
+
+- Get the services inside the cluster
+
+```bash
+kubectl get services
+```
+
+- Create a Pod using Deployments as the abstraction
+
+```bash
+kubectl create deployment <name> --image=<image-name>
+```
+
+  - Example with Nginx
+
+```bash
+kubectl create deployment nginx-depl --image=nginx
+```
+
+![Kubectl basics](/content/blog/kubernetes/kubectl-basics.png)
+
+  - The name of a Pod is the name of the deployment followed by the replicaset hash and the Pod hash
+    - namedeplyment-<replicaset hash>-<pod hash>
+    - Replicaset is managing the replicas of a Pod
+
+![Layers](/content/blog/kubernetes/layers.png)
+
+- Edit a deployment
+
+```bash
+kubectl edit deployment <name>
+```
+
+- Debugging a Pod
+
+```bash
+kubectl logs <pod-name> # to see logs
+kubectl describe pod <pod-name> # to describe the pod
+```
+
+- Interacting with a Pod
+
+```bash
+kubectl exec -it <pod-name> -- bin/bash
+```
+
+- Delete deployments
+
+```bash
+kubectl delete deployment <deployment-name>
+```
+
+- Using a config file to create a deployment
+
+```bash
+kubectl apply -f <config-file>
+```
+
+  - Example with Nginx
+
+```bash
+kubectl apply -f nginx-deployment.yaml
+```
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec: # specification of the deployment
+  replicas: 3 # number of replicas
+  selector: # select the pods that are going to be managed by this deployment
+    matchLabels:
+      app: nginx
+  template: # template of the pods
+    metadata:
+      labels:
+        app: nginx
+    spec: # specification of the pod
+      containers:
+      - name: nginx
+        image: nginx:1.16
+        ports:
+        - containerPort: 80
+```
