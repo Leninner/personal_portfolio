@@ -33,7 +33,7 @@ sudo vim /etc/keepalived/keepalived.conf
 ```
 <br/>
 
-```conf
+```c
 global_defs {
   router_id nginx
 }
