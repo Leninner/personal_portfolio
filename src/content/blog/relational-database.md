@@ -1,7 +1,7 @@
 ---
 title: "Relational Databases"
 description: "Relational Databases allow us to store and retrieve data in a structured and well managed way."
-pubDate: "Apr 02 2023"
+pubDate: "04/02/2023"
 heroImage: "/blog-placeholder-2.jpg"
 tags: ["mysql", "database"]
 ---

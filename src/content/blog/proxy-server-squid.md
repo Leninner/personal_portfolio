@@ -1,7 +1,7 @@
 ---
 title: "Developing a forward proxy server with Squid"
 description: "There are two proxy servers: forward and reverse. In this project we are going to develop a forward proxy server with Squid."
-pubDate: "Oct 25 2023"
+pubDate: "10/25/2023"
 heroImage: "/blog-placeholder-5.jpg"
 tags: ["cloud", "infrastructure", "linux", "squid", "proxy"]
 ---

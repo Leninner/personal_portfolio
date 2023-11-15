@@ -1,7 +1,7 @@
 ---
 title: "Load Balancing with Nginx and AlmaLinux"
 description: "Load balancing is a technique used to distribute workloads uniformly across servers or other compute resources to optimize network efficiency, reliability, and capacity. Load balancing is performed by an application delivery controller (ADC) or a network device such as a multilayer switch or a Domain Name System (DNS) server."
-pubDate: "Nov 11 2023"
+pubDate: "11/11/2023"
 heroImage: "/blog-placeholder-3.jpg"
 tags: ["cloud", "infrastructure", "linux", "nginx"]
 ---

@@ -1,7 +1,7 @@
 ---
 title: "Kubernetes notes"
 description: "K8S is a container orchestration open source platform that allows you to manage your containers in a cluster. Is developed by Google and is based on their internal platform Borg."
-pubDate: "Nov 01 2023"
+pubDate: "11/14/2023"
 updateDate: "Nov 05 2023"
 heroImage: "/blog-placeholder-3.jpg"
 tags: ["cloud", "infrastructure", "kubernetes", "docker"]

@@ -1,7 +1,7 @@
 ---
 title: "Aprendiendo Redux"
 description: "Redux es una librería para JavaScript que nos permite manejar el estado de nuestra aplicación de una manera más sencilla y predecible."
-pubDate: "Nov 10 2023"
+pubDate: "11/10/2023"
 heroImage: "/blog-placeholder-3.jpg"
 tags: ["javascript", "react", "redux"]
 ---

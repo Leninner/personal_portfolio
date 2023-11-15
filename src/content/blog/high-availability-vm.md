@@ -1,7 +1,7 @@
 ---
 title: "Alta disponibilidad en máquinas virtuales"
 description: "Revisamos cómo funciona la alta disponibilidad con la herramienta de Keepalived dentro de máquinas virtuales."
-pubDate: "Nov 02 2023"
+pubDate: "11/02/2023"
 heroImage: "/blog-placeholder-2.jpg"
 tags: ["cloud", "infrastructure", "linux", "keepalived"]
 ---
