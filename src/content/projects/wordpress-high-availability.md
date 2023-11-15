@@ -369,56 +369,6 @@ GRANT SELECT ON performance_schema.* TO 'verifier'@'%';
 
 2. Configure `keepalived` on all nodes.
 
-<div class="relative overflow-x-auto">
-    <table class="w-full text-sm md:text-lg text-left rtl:text-right text-gray-500">
-        <thead class="text-xs md:text-md text-gray-700 uppercase bg-gray-50">
-            <tr>
-                <th scope="col" class="px-6 py-3">
-                    Variable
-                </th>
-                <th scope="col" class="px-6 py-3">
-                    Description
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="bg-white border-b">
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                    global_defs
-                </th>
-                <td class="px-6 py-4">
-                    This section is used to define global variables. In this case, we are defining the router_id which is used to identify the cluster. This must be the same on all nodes.
-                </td>
-            </tr>
-            <tr class="bg-white border-b">
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                    vrrp_script
-                </th>
-                <td class="px-6 py-4">
-                    This section is used to define the script that will be used to check if the node is the primary. In this case, we are using the <strong>check_primary.sh</strong> script that we are going to create later.
-                </td>
-            </tr>
-            <tr class="bg-white border-b">
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                    vrrp_instance
-                </th>
-                <td class="px-6 py-4">
-                    This section is used to define the instance of the cluster. In this case, we are defining the following variables:
-                    <ul class="list-disc list-inside">
-                        <li><strong>state:</strong> This variable is used to define the state of the node. In this case, we are defining the state as <strong>BACKUP</strong> because we want to have a primary node and two backup nodes.</li>
-                        <li><strong>interface:</strong> This variable is used to define the interface that will be used to communicate with the other nodes.</li>
-                        <li><strong>virtual_router_id:</strong> This variable is used to define the id of the cluster. This must be the same on all nodes.</li>
-                        <li><strong>priority:</strong> This variable is used to define the priority of the node. The node with the highest priority will be the primary node.</li>
-                        <li><strong>virtual_ipaddress:</strong> This variable is used to define the <strong>virtual ip address</strong> of the cluster. This must be the same on all nodes.</li>
-                        <li><strong>track_script:</strong> This variable is used to define the script that will be used to check if the node is the primary. In this case, we are using the <strong>check_mysql</strong> script that we defined in an above variable.</li>
-                        <li><strong>authentication:</strong> This variable is used to define the authentication type and password. In this case, we are using the <strong>AH</strong> authentication type and the <strong>secret</strong> password.</li>
-                    </ul>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-
 ```bash
 sudo vim /etc/keepalived/keepalived.conf
 ```
