@@ -14,7 +14,9 @@ image: "/blog-placeholder-4.jpg"
 
 We asked to create a simple mongo-express GUI client using docker and kubernetes. The mongo-express GUI client will be deployed on a kubernetes cluster.
 
-![mongo-express](/content/projects/mongo-express/desired.png)
+![mongo-express](/content/blog/kubernetes/demo.png)
+
+![demo-flow](/content/blog/kubernetes/demo-flow.png)
 
 ## Development
 

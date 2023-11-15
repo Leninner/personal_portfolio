@@ -427,19 +427,4 @@ I would like to complete this diagram:
 
 ![Demo](/content/blog/kubernetes/demo.png)
 
-I need the following components:
-
-- A pod for mongodb
-- A pod for mongo-express
-- A ConfigMap for mongodb url
-- A secret for mongodb credentials
-- An internal service for mongodb
-- An external service for mongo-express
-
-![Demo flow](/content/blog/kubernetes/demo-flow.png)
-
-1. Deployment for mongodb
-
-```yaml
-
-```
+You can find the project details [here](/projects/mongo-express)
