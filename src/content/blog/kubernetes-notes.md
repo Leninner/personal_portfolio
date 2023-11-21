@@ -11,7 +11,6 @@ tags: ["cloud", "infrastructure", "kubernetes", "docker"]
 - [Architecture](#architecture)
   - [Worker servers or Nodes](#worker-servers-or-nodes)
   - [Master Nodes](#master-nodes)
-  - [Example](#example)
 - [Minikube and Kubectl set-up](#minikube-and-kubectl-set-up)
   - [Main kubeclt commands](#main-kubeclt-commands)
 - [YAML configuration files for Kubernetes](#yaml-configuration-files-for-kubernetes)
@@ -209,15 +208,7 @@ K8s operates in a master-slave architecture. The master node is the brain of the
 
 ![Master node](/content/blog/kubernetes/master-node.png)
 
-### Example
-
 ![Example](/content/blog/kubernetes/sticky-example.png)
-
-Requirements:
-- Two master nodes
-- Three worker nodes
-
-> The master node requires less resources than the worker nodes
 
 ## Minikube and Kubectl set-up
 

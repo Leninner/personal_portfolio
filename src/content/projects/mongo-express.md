@@ -8,6 +8,7 @@ image: "/blog-placeholder-4.jpg"
 **Summary**
 
 - [Introduction](#introduction)
+- [Requirements](#requirements)
 - [Development](#development)
 
 ## Introduction
@@ -18,9 +19,13 @@ We asked to create a simple mongo-express GUI client using docker and kubernetes
 
 ![demo-flow](/content/blog/kubernetes/demo-flow.png)
 
+## Requirements
+
+Keep in mind that you need to have installed `docker` and `kubernetes` on your machine. Also you may need to have a basic knowledge of `yaml` files.
+
 ## Development
 
-I will be using `minikube` to create a local kubernetes cluster, so make sure you have it installed on your machine. If you don't have it installed, you can follow the instructions [here](https://minikube.sigs.k8s.io/docs/start/).
+I will be using `minikube` to create a **local kubernetes cluster**, so make sure you have it installed on your machine. If you don't, you can follow the instructions [here](https://minikube.sigs.k8s.io/docs/start/).
 
 1. Create a `mongodb` deployment
 
