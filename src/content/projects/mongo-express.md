@@ -234,7 +234,7 @@ kubectl apply -f mongo-express-deployment.yaml
 8. Check the status of the pods
 
 ```bash
-kubectl get pods
+kubectl get pods -o wide
 ```
 
 9. Check the status of mongo-express accessing to the external IP address generated. You can see this IP with
