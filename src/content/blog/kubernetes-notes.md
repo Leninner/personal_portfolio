@@ -21,6 +21,7 @@ tags: ["cloud", "infrastructure", "kubernetes", "docker"]
   - [Practice using Minikube](#practice-using-minikube)
   - [Use cases](#use-cases)
   - [Configure TLS certificate](#configure-tls-certificate)
+- [Helm Package Manager](#helm-package-manager)
 
 ## What is Kubernetes?
 
@@ -608,3 +609,5 @@ x.x.x.x dashboard.com
 ### Configure TLS certificate
 
 ![TLS](/content/blog/kubernetes/tls.png)
+
+## Helm Package Manager

@@ -2,7 +2,9 @@
 import Icon from "astro-icon";
 import { getCollection } from "astro:content";
 
-const projects = await getCollection("projects");
+const projects = (await getCollection("projects"))
+  .sort((a, b) => (a.data.releaseDate > b.data.releaseDate ? 1 : -1))
+  .slice(0, 2);
 ---
 
 <section class="container xl lg md sm px-5">
@@ -17,7 +19,9 @@ const projects = await getCollection("projects");
           class="flex justify-between items-center md:px-10 md:py-2 border-b border-b-slate-300 cursor-pointer hover:border-b-slate-500 transition-all duration-200 text-black gap-5 md:gap-10"
           href={`/projects/${slug}`}
         >
-          <span class="text-gray-500 text-sm md:text-xl hidden sm:inline ">{type}</span>
+          <span class="text-gray-500 text-sm md:text-xl hidden sm:inline ">
+            {type}
+          </span>
 
           <h2 class="text-xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-medium tracking-wider truncate">
             {title}
