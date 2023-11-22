@@ -1,6 +1,6 @@
 ---
 title: 'Distributed System with Wordpress and MySQL'
-type: 'Landing Page'
+type: 'Infrastructure'
 description: 'Sometimes in companies, you need to have a distributed system to avoid downtime. In this project, you can find the information related to the configuration of a web server with Nginx and PhP for Wordpress.'
 releaseDate: 'Nov 12 2023'
 image: "/blog-placeholder-3.jpg"
@@ -8,16 +8,12 @@ image: "/blog-placeholder-3.jpg"
 **Summary**
 
 - [Introduction](#introduction)
-- [Docker](#docker)
-  - [Requirements](#requirements)
-  - [Usage](#usage)
-- [Virtual Machine (Alma Linux)](#virtual-machine-alma-linux)
-  - [High Availability Cluster](#high-availability-cluster)
-    - [Replication](#replication)
-    - [High Availability](#high-availability)
-  - [Load Balancing Cluster](#load-balancing-cluster)
-    - [Wordpress](#wordpress)
-    - [Load Balancer](#load-balancer)
+- [High Availability Cluster](#high-availability-cluster)
+  - [Replication](#replication)
+  - [High Availability](#high-availability)
+- [Load Balancing Cluster](#load-balancing-cluster)
+  - [Wordpress](#wordpress)
+  - [Load Balancer setup](#load-balancer-setup)
 
 ## Introduction
 
@@ -35,68 +31,32 @@ The system consists of the following:
 
 ![Load balancing cluster](/content/projects/wordpress-high-availability/load-balancing.png)
 
-I had to learn about the different ways to create a distributed system, and I found two ways to do it:
-
-* [Using Docker](#docker)
-* [Using Virtual Machines](#virtual-machine-alma-linux)
-
-## Docker
-
-###  Requirements
-
-- Docker Compose
-- Linux or MacOs
-
-### Usage
-
-Before running the project, you need to create a `.env` file with the following variables:
-
-```bash
-MYSQL_ROOT_PASSWORD=your_root_password
-MYSQL_DATABASE=your_database
-MYSQL_USER=your_user
-MYSQL_PASSWORD=your_password
-```
-
-1. Run the `init.sh` with bash
-
-```bash
-sh init.sh
-```
-
-2. Run the `docker-compose.yml` file
-
-```bash
-docker compose up --env-file .env -d
-```
-
-3. See the result in `http://localhost:3000`
-
-## Virtual Machine (Alma Linux)
 
 I'm using VirtualBox to create the virtual machines. You can download it from the following [link](https://www.virtualbox.org/). All the nodes or servers that I'm going to create are going to be based on the following image:
 
 - [AlmaLinux 8.4](https://repo.almalinux.org/vault/8.4-beta/isos/x86_64/)
 - We also have the **Bridged Adapter** network configuration.
 
-### High Availability Cluster
+## High Availability Cluster
 
 We must generate three virtual machines with the following configuration:
 - Server One
-  - **IP**: 192.168.100.100 
+  - **IP**: x.x.x.100 
   - **Hostname**: SQL-ONE
 
 - Server Two
-  - **IP**: 192.168.100.101
+  - **IP**: x.x.x.101
   - **Hostname**: SQL-TWO
 
 - Server Three
-  - **IP**: 192.168.100.102
+  - **IP**: x.x.x.102
   - **Hostname**: SQL-THREE
 
 > If you want to change the IP address of a virtual machine, you can read the following [post](/blog/change-ip-vm/).
 
-#### Replication
+> `Disclaimer:` The `x.x.x` is the network address of your network. You can check it running the following command `ip a` on your host machine.
+
+### Replication
 > You can read more about the configuration of a `replication cluster` in the following [link](/blog/replication-mysql/).
 
 1. We must install and configure `mysql` and `mysql-server` on all virtual machines
@@ -251,8 +211,8 @@ enforce_gtid_consistency=ON
 plugin_load_add='group_replication.so'
 group_replication_group_name="5add9b42-775c-11ee-be2f-080027f362da"
 group_replication_start_on_boot=off
-group_replication_local_address= "192.168.100.79:33061"
-group_replication_group_seeds= "192.168.100.79:33061,192.168.100.80:33061,192.168.100.81:33061"
+group_replication_local_address= "x.x.x.79:33061"
+group_replication_group_seeds= "x.x.x.79:33061,x.x.x.80:33061,x.x.x.81:33061"
 ```   
 
 And then restart the `mysqld` service
@@ -352,7 +312,7 @@ y.y.y.y MACHINE-HOSTNAME
 z.z.z.z MACHINE-HOSTNAME
 ```
 
-#### High Availability
+### High Availability
 
 > You can read in more detail about the configuration of a `high availability cluster` in the following [link](/blog/high-availability-vm/).
 
@@ -392,7 +352,7 @@ vrrp_instance VI_01 {
   priority 90
 
   virtual_ipaddress {
-    192.168.100.167/24
+    x.x.x.167/24
   }
 
   track_script {
@@ -482,26 +442,26 @@ CREATE USER 'wordpressuser'@'%' IDENTIFIED WITH mysql_native_password BY '1850AB
 GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpress'@'%';
 ```
 
-### Load Balancing Cluster
+## Load Balancing Cluster
 
 We must generate three virtual machines with the following configuration:
 - Server Load Balancer
-  - **IP**: 192.168.100.162
+  - **IP**: x.x.x.162
   - **Hostname**: LOAD-BALANCER
 
 - Server One
-  - **IP**: 192.168.100.160
+  - **IP**: x.x.x.160
   - **Hostname**: SERVER-ONE
 
 - Server Two
-  - **IP**: 192.168.100.161
+  - **IP**: x.x.x.161
   - **Hostname**: SERVER-TWO
 
 > If you want to change the IP address of a virtual machine, you can read the following [post](/blog/change-ip-vm/).
 
 In this project I'm going to use Wordpress, so if you want to do the same configuration for any other application, you can do it.
 
-#### Wordpress
+### Wordpress
 
 Run these commands on the `SERVER-ONE` and `SERVER-TWO` virtual machines
 
@@ -546,7 +506,7 @@ You must replace the field with the following values:
 define( 'DB_NAME', 'wordpress' );
 define( 'DB_USER', 'wordpressuser' );
 define( 'DB_PASSWORD', '1850ABc' );
-define( 'DB_HOST', '192.168.100.167' ); // the ip address of the high availability cluster
+define( 'DB_HOST', 'x.x.x.167' ); // the ip address of the high availability cluster
 ```
 
 6. Verify if the file is present, otherwise create and add the following config for the server to read PHP files
@@ -582,7 +542,7 @@ sudo systemctl enable php-fpm
 sudo setenforce 0
 ```
 
-#### Load Balancer
+### Load Balancer setup
 
 1. Install `nginx`
 
@@ -603,8 +563,8 @@ log_format upstreamlog '$host to: $upstream_addr [$request]'
 
 upstream backend {
     # ip_hash;
-    server 192.168.100.160;
-    server 192.168.100.161;
+    server x.x.x.160;
+    server x.x.x.161;
 }
 
 server {
@@ -656,4 +616,4 @@ sudo systemctl enable nginx
 
 5. Check the correct configuration of the load balancer seeing the ip address of the load balancer
 
-See https://192.168.100.162/
+See https://x.x.x.162/
