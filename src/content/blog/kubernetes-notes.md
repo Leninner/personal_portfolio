@@ -16,6 +16,7 @@ tags: ["cloud", "infrastructure", "kubernetes", "docker"]
 - [YAML configuration files for Kubernetes](#yaml-configuration-files-for-kubernetes)
 - [Demo](#demo)
 - [Namespaces](#namespaces)
+  - [Characteristics](#characteristics)
 
 ## What is Kubernetes?
 
@@ -431,7 +432,7 @@ You can find the project details [here](/projects/mongo-express)
 
 Is a virtual cluster inside a kubernetes cluster and provides a way to organize clusters resources.
 
-Kubernetes gives us **3** namespaces by default and out of the box:
+Kubernetes gives us **4** namespaces by default and out of the box:
 
 - **kube-system:** Is the namespace for objects created by the Kubernetes system. It contains pods and services that are required for the cluster to function properly, such as the Kubernetes API server itself, the scheduler, and the core resource controllers. You don't create objects in this namespace.
 - **kube-public:** Contains a ConfigMap of the public information about the cluster. This namespace is readable by all users, including those not authenticated. This namespace is mostly used by cluster administrators to share resources with all users of the cluster.
@@ -448,4 +449,56 @@ To create a `namespace` from a config file:
 
 ```yaml
 apiVersion: v1
+kind: Namespace
+
+metadata:
+  name: <namespace-name>
+```
+
+```bash
+kubectl apply -f <config-file>
+```
+
+Here is an example of how to organize the resources in different namespaces:
+
+![Namespaces](/content/blog/kubernetes/namespaces.png)
+
+Also, you may have different teams working in a same named deployment but with different configuration, so you can create a namespace for each team and create a deployment for each team.
+
+![Namespaces](/content/blog/kubernetes/namespaces-2.png)
+
+Also, you may want to share resources within different environments, so you can create a namespace for each environment and create a deployment for each environment.
+
+![Namespaces](/content/blog/kubernetes/namespaces-3.png)
+
+### Characteristics
+
+- You can't access most resources from another Namespace. Each NS must define own ConfigMaps and Secrets.
+- You can access services from another Namespace by using the following syntax: `service-name.namespace-name`
+- Some components can't be created inside a namespace. For example, you can't create a `volume` or a `node` inside a namespace.
+  - You can check all the components that can't be created inside a namespace running the following command: `kubectl api-resources --namespaced=false`
+  - You can check all the components that can be created inside a namespace running the following command: `kubectl api-resources --namespaced=true`
+
+To create components inside a namespace using a config file we can use the following syntax:
+
+- Using a command
+
+```bash
+kubectl apply -f <config-file> -n <namespace-name>
+```
+
+- Configuring it inside the config file
+
+```yaml
+# ...
+metadata:
+  name: <component-name>
+  namespace: <namespace-name>
+# ...
+```
+
+- To get the any resource inside a namespace
+
+```bash
+kubectl get <resource-name> -n <namespace-name>
 ```
