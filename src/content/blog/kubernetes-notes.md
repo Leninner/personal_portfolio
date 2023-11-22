@@ -15,6 +15,7 @@ tags: ["cloud", "infrastructure", "kubernetes", "docker"]
   - [Main kubeclt commands](#main-kubeclt-commands)
 - [YAML configuration files for Kubernetes](#yaml-configuration-files-for-kubernetes)
 - [Demo](#demo)
+- [Namespaces](#namespaces)
 
 ## What is Kubernetes?
 
@@ -353,6 +354,12 @@ spec: # specification of the deployment
 kubectl delete -f <config-file>
 ```
 
+- To get the information of the cluster (readed from the kube-public namespace)
+
+```bash
+kubectl cluster-info
+```
+
 ## YAML configuration files for Kubernetes
 
 Each configuration file consist of 3 parts:
@@ -419,3 +426,26 @@ I would like to complete this diagram:
 ![Demo](/content/blog/kubernetes/demo.png)
 
 You can find the project details [here](/projects/mongo-express)
+
+## Namespaces
+
+Is a virtual cluster inside a kubernetes cluster and provides a way to organize clusters resources.
+
+Kubernetes gives us **3** namespaces by default and out of the box:
+
+- **kube-system:** Is the namespace for objects created by the Kubernetes system. It contains pods and services that are required for the cluster to function properly, such as the Kubernetes API server itself, the scheduler, and the core resource controllers. You don't create objects in this namespace.
+- **kube-public:** Contains a ConfigMap of the public information about the cluster. This namespace is readable by all users, including those not authenticated. This namespace is mostly used by cluster administrators to share resources with all users of the cluster.
+- **kube-node-lease:** Holds information about the heartbeats of the nodes in the cluster. Each node has associated lease object in this namespace. Also this namespace helps to determine the aviablity of a node.
+- **default:** Is the namespace where you will create the resources by default if you don't create a namespace explicitly.
+
+To create a `namespace` from the command line:
+
+```bash
+kubectl create namespace <namespace-name>
+```
+
+To create a `namespace` from a config file:
+
+```yaml
+apiVersion: v1
+```
