@@ -17,6 +17,10 @@ tags: ["cloud", "infrastructure", "kubernetes", "docker"]
 - [Demo](#demo)
 - [Namespaces](#namespaces)
   - [Characteristics](#characteristics)
+- [Ingress](#ingress)
+  - [Practice using Minikube](#practice-using-minikube)
+  - [Use cases](#use-cases)
+  - [Configure TLS certificate](#configure-tls-certificate)
 
 ## What is Kubernetes?
 
@@ -502,3 +506,105 @@ metadata:
 ```bash
 kubectl get <resource-name> -n <namespace-name>
 ```
+
+## Ingress
+
+Is a component which is useful to redirect traffic for a certain domain to a certain service inside the cluster. The service must be of type `Internal` and the **IP** and **PORT** shouldn't be exposed to the outside world.
+
+In an `ingress configuration file` we can specify the following:
+
+```yaml
+# ...
+spec:
+  rules:
+  - host: myapp.com
+    http:
+      paths:
+      - backend:
+        serviceName: myapp-internal-service
+        servicePort: 8080
+# ...
+```
+
+Additionally to this configuration to create the ingress, we must create an `Ingress Controller`. This component has the following responsibilities:
+
+- Evaluates all the rules in your cluster
+- Manages all the redirections
+- Entrypoint to the cluster
+- There is many third-party implementations of ingress controllers. You can choose the `Nginx Ingress Controller` which is the default used by K8
+
+### Practice using Minikube
+
+To enable **ingress** in minikube, we must run the following command:
+
+```bash
+minikube addons enable ingress
+```
+
+- This command will automatically starts the K8s NGINX implementation of the ingress controller
+
+
+Let's create an **ingress rule** using a config file:
+
+- First activate the dashboard
+
+```bash
+minikube dashboard
+```
+
+- Now, let's create the actual ingress rule
+
+```bash
+vim dashboard-ingress.yaml
+```
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: dashboard-ingress
+  namespace: kubernetes-dashboard
+
+spec:
+  rules:
+  - host: dashboard.com
+    http:
+      paths:
+      - backend:
+          service:
+            serviceName: kubernetes-dashboard
+            servicePort: 80
+```
+
+```bash
+kubectl apply -f dashboard-ingress.yaml
+```
+
+- Now, we must add the following line to the `/etc/hosts` file
+
+```bash
+sudo vim /etc/hosts
+```
+
+```bash
+# ...
+x.x.x.x dashboard.com
+# ...
+```
+
+- Now, we can access to the dashboard using the following url: `dashboard.com`
+
+### Use cases
+
+- You may want to redirect traffic from a certain path to a certain service. For example, you may want to redirect traffic from `myapp.com/api` to a certain service inside the cluster.
+
+![first example](/content/blog/kubernetes/multiple-ingress-path.png)
+
+- You may want to redirect traffic from a certain subdomain to a certain service. For example, you may want to redirect traffic from `api.myapp.com` to a certain service inside the cluster.
+
+![second example](/content/blog/kubernetes/multiple-ingress-subdomain.png)
+
+### Configure TLS certificate
+
+![TLS](/content/blog/kubernetes/tls.png)
