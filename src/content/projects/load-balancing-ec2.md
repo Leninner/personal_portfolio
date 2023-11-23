@@ -12,6 +12,8 @@ image: "/blog-placeholder-3.jpg"
 - [Architecture](#architecture)
   - [Requirements](#requirements)
 - [Implementation](#implementation)
+  - [Using SAM CLI](#using-sam-cli)
+  - [Using CDK](#using-cdk)
 - [Conclusion](#conclusion)
 
 ## Introduction
@@ -48,18 +50,29 @@ Elastic Load Balancing supports these types of load balancers: Application Load 
 
 ## Architecture
 
-![Architecture](/images/load-balancing-ec2/architecture.png)
+![Architecture](/images/load-balancing-aws/architecture.png)
 
 In the above architecture, we have a load balancer that distributes incoming traffic across multiple EC2 instances. You can add and remove instances from your load balancer as your needs change, without disrupting the overall flow of requests to your application.
 
 ### Requirements
 
-- An AWS account
+- An AWS account and AWS CLI configured on your computer
 - Some knowledge about AWS services like EC2, VPC, IAM, etc.
 - A basic knowledge of Linux commands
-- CDK installed on your computer
+- CDK and SAM CLI installed on your computer
 
 ## Implementation
+
+For this project I will be using two approaches:
+
+- [Using SAM CLI](#using-sam-cli)
+- [Using CDK](#using-cdk)
+
+These two approaches are very similar, but the CDK approach is more flexible and powerful. You may choose the approach that best suits your needs.
+
+### Using SAM CLI
+
+### Using CDK
 
 ## Conclusion
 
