@@ -1,7 +1,7 @@
 ---
-title: 'A load balancing system with EC2 instances and CDK'
+title: 'A load balancing system using Amazon Web Services (AWS)'
 type: 'Cloud Computing'
-description: 'Cloud Development Kit (CDK) is an open source software development framework to model and provision your cloud application resources using familiar programming languages. In this project, we will use CDK to create a load balancing system with EC2 instances.'
+description: 'A load balancing system is a system that distributes incoming network traffic across multiple servers. This ensures no single server bears too much demand. By spreading the work evenly, load balancing improves application responsiveness. It also increases availability of applications and websites for users. Load balancing is performed by an algorithm known as a load balancer. In AWS, you can use Elastic Load Balancing to automatically distribute incoming traffic across multiple targets, such as Amazon EC2 instances, containers, IP addresses, and Lambda functions. It can handle the varying load of your application traffic in a single Availability Zone or across multiple Availability Zones. Elastic Load Balancing offers three types of load balancers that all feature the high availability, automatic scaling, and robust security necessary to make your applications fault tolerant.'
 releaseDate: 'Nov 20 2023'
 image: "/blog-placeholder-3.jpg"
 ---
@@ -50,7 +50,7 @@ Elastic Load Balancing supports these types of load balancers: Application Load 
 
 ## Architecture
 
-![Architecture](/projects/load-balancing-aws/architecture.png)
+![Architecture](/content/projects/load-balancing-aws/architecture.png)
 
 In the above architecture, we have a load balancer that distributes incoming traffic across multiple EC2 instances. You can add and remove instances from your load balancer as your needs change, without disrupting the overall flow of requests to your application.
 
