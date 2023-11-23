@@ -3,7 +3,7 @@ import Icon from "astro-icon";
 import { getCollection } from "astro:content";
 
 const projects = (await getCollection("projects"))
-  .sort((a, b) => (a.data.releaseDate > b.data.releaseDate ? 1 : -1))
+  .sort((a, b) => (a.data.releaseDate > b.data.releaseDate ? -1 : 1))
   .slice(0, 2);
 ---
 

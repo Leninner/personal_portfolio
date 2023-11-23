@@ -50,7 +50,7 @@ Elastic Load Balancing supports these types of load balancers: Application Load 
 
 ## Architecture
 
-![Architecture](/images/load-balancing-aws/architecture.png)
+![Architecture](/projects/load-balancing-aws/architecture.png)
 
 In the above architecture, we have a load balancer that distributes incoming traffic across multiple EC2 instances. You can add and remove instances from your load balancer as your needs change, without disrupting the overall flow of requests to your application.
 
