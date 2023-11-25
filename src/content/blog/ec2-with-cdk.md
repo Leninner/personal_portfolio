@@ -154,10 +154,10 @@ new LoadBalancingAwsStack(app, 'LoadBalancingAwsStack', {
 });
 ```
 
-5. Create a file called `cdk-deploy-to.sh` in the root folder of the project and add the following code:
+5. To deploy create a file called `cdk-deploy-to.sh` in the root folder of the project and add the following code:
 
 ```bash
-#!/usr/bin/env bash
+#!/bin-bash
 if [[ $# -ge 2 ]]; then
     export CDK_DEPLOY_ACCOUNT=$1
     export CDK_DEPLOY_REGION=$2
@@ -174,7 +174,7 @@ fi
 6. Run the `cdk-deploy-to.sh` script to deploy the stack to your AWS account. You can find the script in the root folder of the project.
 
 ```bash
-sh cdk-deploy-to.sh your-aws-account-id your-aws-region "$@"
+bash cdk-deploy-to.sh your-aws-account-id your-aws-region --profile your-aws-profile
 ```
 
 7. After the deployment is complete, you can see the EC2 instance in the AWS console.
