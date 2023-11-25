@@ -195,6 +195,18 @@ cdk bootstrap --profile <your profile> --region <your-region>
 
 7. After the deployment is complete, you can see the EC2 instance in the AWS console.
 
+- This is the output of the **terminal**:
+
+![pre deploy](/content/blog/ec2-with-cdk/pre-deploy.png)
+
+- This is the output of the **AWS CloudFormation Console**:
+
+![cloudformation console](/content/blog/ec2-with-cdk/cloudformation-console.jpeg)
+
+- This is the output of the **AWS EC2 Console**:
+
+![ec2 console](/content/blog/ec2-with-cdk/ec2-console.png)
+
 > You can see the complete code in the [GitHub repository](https://github.com/Leninner/cloud/tree/main/aws/cdk/ec2-with-cdk).
 
 ## Conclusion
