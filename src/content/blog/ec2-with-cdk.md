@@ -145,7 +145,7 @@ new LoadBalancingAwsStack(app, 'LoadBalancingAwsStack', {
     account: process.env.CDK_DEFAULT_ACCOUNT, 
     region: process.env.CDK_DEFAULT_REGION
   },
-
+cdk-hnb659fds-cfn-exec-role-749710350214-us-east-1
   /* Uncomment the next line if you know exactly what Account and Region you
    * want to deploy the stack to. */
   // env: { account: 'your-account-id', region: 'your-default-region' },
@@ -154,7 +154,9 @@ new LoadBalancingAwsStack(app, 'LoadBalancingAwsStack', {
 });
 ```
 
-5. To deploy create a file called `cdk-deploy-to.sh` in the root folder of the project and add the following code:
+Note that we are using the **env** property to specify the AWS account and region where we want to deploy the stack. So in the next step we will create a script to deploy the stack to our AWS account.
+
+5. To deploy to a specific environment we can create a script that will set the environment variables and then call the `cdk deploy` command. Create a file called `cdk-deploy-to-dev.sh` in the root folder of the project and add the following code:
 
 ```bash
 #!/bin-bash
@@ -171,10 +173,24 @@ else
 fi
 ```
 
-6. Run the `cdk-deploy-to.sh` script to deploy the stack to your AWS account. You can find the script in the root folder of the project.
+And make the script executable:
 
 ```bash
-bash cdk-deploy-to.sh your-aws-account-id your-aws-region --profile your-aws-profile
+chmod +x cdk-deploy-to.sh
+```
+
+6. If is the first project you are deploying using CDK in the region you are using, you need to bootstrap the environment. To do that, run the following command:
+
+> This command must be run only once per region and AWS account. Learn more about [here](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html).
+
+```bash
+cdk bootstrap --profile <your profile> --region <your-region>
+```
+
+7. Run the `cdk-deploy-to-dev.sh` script to deploy the stack to your AWS account. You can find the script in the root folder of the project.
+
+```bash
+./cdk-deploy-to.sh your-aws-account-id your-aws-region --profile your-aws-profile
 ```
 
 7. After the deployment is complete, you can see the EC2 instance in the AWS console.
