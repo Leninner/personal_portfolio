@@ -3,7 +3,7 @@ title: "AWS EC2 instance using AWS Cloud Development Kit"
 description: "Cloud Development Kit is a powerful tool that allows us to write our infrastructure as code with our favorite programming languaje. In this post, I am going throught by a step by step tutorial to deploy our first EC2 machine using the default VPC."
 pubDate: "11/25/2023"
 heroImage: "/blog-placeholder-3.jpg"
-tags: ["cloud", "aws", "ec2", "infrastructure", "aws", "cdk"]
+tags: ["cloud", "aws", "ec2", "infrastructure", "cdk"]
 ---
 **Summary**
 
