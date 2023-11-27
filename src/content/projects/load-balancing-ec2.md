@@ -62,6 +62,8 @@ In the above architecture, we have a load balancer that distributes incoming tra
 - **CDK CLI** and **Terraform** installed on your computer
 - An IDE or text editor, I will be using **Visual Studio Code**
 
+> Remeber that if is the first time you are running the stacks in the region, you have to run the `cdk bootstrap` command to prepare the environment for the stacks.
+
 ## Implementation
 
 For this project I will be using two approaches:
