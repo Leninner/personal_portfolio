@@ -87,7 +87,73 @@ cd load-balancing-aws
 cdk init app --language typescript
 ```
 
-2. In the `lib` folder, in the generated file `load-balancing-aws-stack.ts`, add the following code:
+2. Create folder called `data` which will contain the user data scripts for the EC2 instances.
+3. In the `data` folder, create a file called `user-data-wordpress.sh` and add the following code:
+
+We are going to use `apache` as our web server and `php` for wordpress installation.
+
+```bash
+#!/bin/bash
+yum update -y
+sudo su
+
+amazon-linux-extras install -y httpd2.4
+amazon-linux-extras install -y php7.2
+
+yum clean metadata
+yum install php-cli php-pdo php-fpm php-json php-mysqlnd -y
+
+systemctl start php-fpm
+systemctl enable php-fpm
+
+wget https://wordpress.org/latest.tar.gz
+tar -xzf latest.tar.gz
+cp -r wordpress/* /var/www/html/
+rm -rf wordpress
+rm -rf latest.tar.gz
+
+chown -R apache:apache /var/www/html/
+
+systemctl start httpd
+systemctl enable httpd
+```
+
+4. In the `data` folder, create a file called `user-data-load-balancer.sh` and add the following code:
+
+```bash
+#!/bin/bash
+yum update -y
+sudo su
+
+amazon-linux-extras install -y nginx1.12
+
+systemctl start nginx
+systemctl enable nginx
+```
+
+5. In the `data` folder, create a file called `user-data-mysql.sh` and add the following code:
+
+```bash
+#!/bin/bash
+yum update -y
+sudo su
+
+yum install -y mysql mysql-server
+systemctl start mysqld
+systemctl enable mysqld
+
+mysql_secure_installation <<EOF
+y
+your-secure-password
+your-secure-password
+y
+y
+y
+y
+EOF
+```
+
+6. In the `lib` folder, in the generated file `load-balancing-aws-stack.ts`, add the following code:
 
 This code is for the load balancer and the EC2 instances.
 
@@ -133,22 +199,41 @@ export class LoadBalancingAwsStack extends cdk.Stack {
       cpuType: ec2.AmazonLinuxCpuType.X86_64,
     });
 
-    // Create an EC2 instance using the AMI and Security Group
-    const instance = new ec2.Instance(this, "Instance", {
+    // Create an instance for the load balancer
+    const loadBalancerInstance = new ec2.Instance(this, "LoadBalancerInstance", {
       vpc,
       instanceType: new ec2.InstanceType("t2.micro"),
       machineImage: ami,
       securityGroup,
-    });
+    })
 
-    // Read the user data script from the file system
-    const userData = readFileSync("../data/user-data.sh", "utf8");
-    instance.addUserData(userData);
+    // Create two instances for the web servers
+    const webServerInstanceOne = new ec2.Instance(this, "WebServerInstanceOne", {
+      vpc,
+      instanceType: new ec2.InstanceType("t2.micro"),
+      machineImage: ami,
+      securityGroup,
+    })
+
+    const webServerInstanceTwo = new ec2.Instance(this, "WebServerInstanceTwo", {
+      vpc,
+      instanceType: new ec2.InstanceType("t2.micro"),
+      machineImage: ami,
+      securityGroup,
+    })
+
+    // Add the user data scripts to the instances
+    const userDataLoadBalancer = readFileSync("./data/user-data-load-balancer.sh", "utf8");
+    const userDataWordpress = readFileSync("./data/user-data-wordpress.sh", "utf8");
+
+    loadBalancerInstance.addUserData(userDataLoadBalancer);
+    webServerInstanceOne.addUserData(userDataWordpress);
+    webServerInstanceTwo.addUserData(userDataWordpress);
   }
 }
 ```
 
-3. We have to create another stack in the `lib` folder. Create a new file called `replication-stack.ts` and add the following code:
+7. We have to create another stack in the `lib` folder. Create a new file called `replication-stack.ts` and add the following code:
 
 ```typescript
 import * as cdk from "aws-cdk-lib";
@@ -232,72 +317,7 @@ export class ReplicationStack extends cdk.Stack {
 }
 ```
 
-4. In the `data` folder, create a file called `user-data-wordpress.sh` and add the following code:
-
-We are going to use `apache` as our web server and `php` for wordpress installation.
-
-```bash
-#!/bin/bash
-yum update -y
-sudo su
-
-amazon-linux-extras install -y httpd2.4
-amazon-linux-extras install -y php7.2
-
-yum clean metadata
-yum install php-cli php-pdo php-fpm php-json php-mysqlnd -y
-
-systemctl start php-fpm
-systemctl enable php-fpm
-
-wget https://wordpress.org/latest.tar.gz
-tar -xzf latest.tar.gz
-cp -r wordpress/* /var/www/html/
-rm -rf wordpress
-rm -rf latest.tar.gz
-
-chown -R apache:apache /var/www/html/
-
-systemctl start httpd
-systemctl enable httpd
-```
-
-5. In the `data` folder, create a file called `user-data-load-balancer.sh` and add the following code:
-
-```bash
-#!/bin/bash
-yum update -y
-sudo su
-
-amazon-linux-extras install -y nginx1.12
-
-systemctl start nginx
-systemctl enable nginx
-```
-
-6. In the `data` folder, create a file called `user-data-mysql.sh` and add the following code:
-
-```bash
-#!/bin/bash
-yum update -y
-sudo su
-
-yum install -y mysql mysql-server
-systemctl start mysqld
-systemctl enable mysqld
-
-mysql_secure_installation <<EOF
-y
-your-secure-password
-your-secure-password
-y
-y
-y
-y
-EOF
-```
-
-7. In the `bin` folder, in the generated file `load-balancing-aws.ts`, add the following code:
+8. In the `bin` folder, in the generated file `load-balancing-aws.ts`, add the following code:
 
 ```typescript
 #!/usr/bin/env node
@@ -327,7 +347,7 @@ new ReplicationStack(app, "ReplicationStack", {
 });
 ```
 
-8. To deploy:
+9. To deploy:
   - If you want to deploy to a specific environment, you would like to have an AWS Account for each environment. You can use the `cdk-deploy-to-[env].sh` script to deploy the stack to your AWS account. You can find the script in the root folder of the project.
 
   We are going to deploy to the `dev` environment, so create a file called `cdk-deploy-to-dev.sh` and add the following code:
@@ -347,14 +367,14 @@ new ReplicationStack(app, "ReplicationStack", {
   fi
   ```
 
-9. Run the `cdk-deploy-to-dev.sh` script to deploy the stack to your AWS account.
+10. Run the `cdk-deploy-to-dev.sh` script to deploy the stack to your AWS account.
 
 ```bash
 bash cdk-deploy-to-dev.sh your-aws-account-id your-aws-region --profile your-aws-profile
 ```
 
-10. After the deployment is complete, you can see the resources created in your AWS account going to the AWS CloudFormation console.
-11. To complete the group replication, you have to connect to the EC2 instances and run the following commands:
+11. After the deployment is complete, you can see the resources created in your AWS account going to the AWS CloudFormation console.
+12. To complete the group replication, you have to connect to the EC2 instances and run the following commands:
 
 ## Conclusion
 
