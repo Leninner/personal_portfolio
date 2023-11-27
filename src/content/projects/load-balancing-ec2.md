@@ -89,6 +89,8 @@ cdk init app --language typescript
 
 2. In the `lib` folder, in the generated file `load-balancing-aws-stack.ts`, add the following code:
 
+This code is for the load balancer and the EC2 instances.
+
 ```typescript
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
@@ -146,80 +148,213 @@ export class LoadBalancingAwsStack extends cdk.Stack {
 }
 ```
 
-3. In the `data` folder, create a file called `user-data.sh` and add the following code:
+3. We have to create another stack in the `lib` folder. Create a new file called `replication-stack.ts` and add the following code:
 
-This script will install NGINX and set up a simple website.
+```typescript
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { readFileSync } from "fs";
+
+export class ReplicationStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+    super(scope, id, props);
+
+    // Set up the default VPC for the region
+    const vpc = ec2.Vpc.fromLookup(this, "VPC", {
+      isDefault: true,
+    });
+
+    // Create a security group with all outbound traffic allowed
+    const securityGroup = new ec2.SecurityGroup(this, "SecurityGroup", {
+      vpc,
+      description: "Allow SSH (TCP port 22) and HTTP (TCP port 80) in",
+      allowAllOutbound: true,
+    });
+
+    // Allow SSH and HTTP traffic in from anywhere
+    securityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(22),
+      "Allow SSH access from the world"
+    );
+
+    // Allow MySQL traffic in from anywhere
+    securityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(3306),
+      "Allow MySQL access from the world"
+    );
+
+    // Allow MySQL Group Replication traffic in from anywhere
+    securityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(33061),
+      "Allow MySQL Group Replication access from the world"
+    );
+
+    // Create an Amazon Machine image
+    const ami = new ec2.AmazonLinuxImage({
+      generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
+      cpuType: ec2.AmazonLinuxCpuType.X86_64,
+    });
+
+    // Create three EC2 instances using the AMI and Security Group
+    const instanceSqlOne = new ec2.Instance(this, "InstanceSqlOne", {
+      vpc,
+      instanceType: new ec2.InstanceType("t2.micro"),
+      machineImage: ami,
+      securityGroup,
+    });
+
+    const instanceSqlTwo = new ec2.Instance(this, "InstanceSqlTwo", {
+      vpc,
+      instanceType: new ec2.InstanceType("t2.micro"),
+      machineImage: ami,
+      securityGroup,
+    });
+
+    const instanceSqlThree = new ec2.Instance(this, "InstanceSqlThree", {
+      vpc,
+      instanceType: new ec2.InstanceType("t2.micro"),
+      machineImage: ami,
+      securityGroup,
+    });
+
+    // Read the user data script from the file system
+    const userData = readFileSync("./data/user-data-sql.sh", "utf8");
+
+    // Add the user data script to the instances
+    instanceSqlOne.addUserData(userData);
+    instanceSqlTwo.addUserData(userData);
+    instanceSqlThree.addUserData(userData);
+  }
+}
+```
+
+4. In the `data` folder, create a file called `user-data-wordpress.sh` and add the following code:
+
+We are going to use `apache` as our web server and `php` for wordpress installation.
 
 ```bash
 #!/bin/bash
 yum update -y
 sudo su
 
-amazon-linux-extras install -y nginx1
-systemctl start nginx
-systemctl enable nginx
+amazon-linux-extras install -y httpd2.4
+amazon-linux-extras install -y php7.2
 
-chmod 2775 /usr/share/nginx/html
-find /usr/share/nginx/html -type d -exec chmod 2775 {} \;
-find /usr/share/nginx/html -type f -exec chmod 0664 {} \;
+yum clean metadata
+yum install php-cli php-pdo php-fpm php-json php-mysqlnd -y
 
-echo "<h1>Simple EC2 website using NGINX</h1>" > /usr/share/nginx/html/index.html
+systemctl start php-fpm
+systemctl enable php-fpm
+
+wget https://wordpress.org/latest.tar.gz
+tar -xzf latest.tar.gz
+cp -r wordpress/* /var/www/html/
+rm -rf wordpress
+rm -rf latest.tar.gz
+
+chown -R apache:apache /var/www/html/
+
+systemctl start httpd
+systemctl enable httpd
 ```
 
-4. In the `bin` folder, in the generated file `load-balancing-aws.ts`, add the following code:
+5. In the `data` folder, create a file called `user-data-load-balancer.sh` and add the following code:
+
+```bash
+#!/bin/bash
+yum update -y
+sudo su
+
+amazon-linux-extras install -y nginx1.12
+
+systemctl start nginx
+systemctl enable nginx
+```
+
+6. In the `data` folder, create a file called `user-data-mysql.sh` and add the following code:
+
+```bash
+#!/bin/bash
+yum update -y
+sudo su
+
+yum install -y mysql mysql-server
+systemctl start mysqld
+systemctl enable mysqld
+
+mysql_secure_installation <<EOF
+y
+your-secure-password
+your-secure-password
+y
+y
+y
+y
+EOF
+```
+
+7. In the `bin` folder, in the generated file `load-balancing-aws.ts`, add the following code:
 
 ```typescript
 #!/usr/bin/env node
-import 'source-map-support/register';
-import * as cdk from 'aws-cdk-lib';
-import { LoadBalancingAwsStack } from '../lib/load-balancing-aws-stack';
+import "source-map-support/register";
+import * as cdk from "aws-cdk-lib";
+import { LoadBalancingAwsStack } from "../lib/load-balancing-aws-stack";
+import { ReplicationStack } from "../lib/replication-stack";
 
 const app = new cdk.App();
 
-new LoadBalancingAwsStack(app, 'LoadBalancingAwsStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
-
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  env: { 
-    account: process.env.CDK_DEFAULT_ACCOUNT, 
-    region: process.env.CDK_DEFAULT_REGION
+new LoadBalancingAwsStack(app, "LoadBalancingAwsStack", {
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: process.env.CDK_DEFAULT_REGION,
   },
+  stackName: "LoadBalancingAwsStack",
+  description: "AWS CDK Load Balancing stack",
+});
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: 'your-account-id', region: 'your-default-region' },
-
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+new ReplicationStack(app, "ReplicationStack", {
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: process.env.CDK_DEFAULT_REGION,
+  },
+  stackName: "ReplicationStack",
+  description: "AWS CDK Replication stack",
 });
 ```
 
-5. Create a file called `cdk-deploy-to.sh` in the root folder of the project and add the following code:
+8. To deploy:
+  - If you want to deploy to a specific environment, you would like to have an AWS Account for each environment. You can use the `cdk-deploy-to-[env].sh` script to deploy the stack to your AWS account. You can find the script in the root folder of the project.
+
+  We are going to deploy to the `dev` environment, so create a file called `cdk-deploy-to-dev.sh` and add the following code:
+
+  ```bash
+  #!/usr/bin/env bash
+  if [[ $# -ge 2 ]]; then
+      export CDK_DEPLOY_ACCOUNT=$1
+      export CDK_DEPLOY_REGION=$2
+      shift; shift
+      npx cdk deploy "$@"
+      exit $?
+  else
+      echo 1>&2 "Provide account and region as first two args."
+      echo 1>&2 "Additional args are passed through to cdk deploy."
+      exit 1
+  fi
+  ```
+
+9. Run the `cdk-deploy-to-dev.sh` script to deploy the stack to your AWS account.
 
 ```bash
-#!/usr/bin/env bash
-if [[ $# -ge 2 ]]; then
-    export CDK_DEPLOY_ACCOUNT=$1
-    export CDK_DEPLOY_REGION=$2
-    shift; shift
-    npx cdk deploy "$@"
-    exit $?
-else
-    echo 1>&2 "Provide account and region as first two args."
-    echo 1>&2 "Additional args are passed through to cdk deploy."
-    exit 1
-fi
+bash cdk-deploy-to-dev.sh your-aws-account-id your-aws-region --profile your-aws-profile
 ```
 
-6. Run the `cdk-deploy-to.sh` script to deploy the stack to your AWS account. You can find the script in the root folder of the project.
-
-```bash
-sh cdk-deploy-to.sh your-aws-account-id your-aws-region "$@"
-```
-
-7. After the deployment is complete, you can see the EC2 instance in the AWS console.
+10. After the deployment is complete, you can see the resources created in your AWS account going to the AWS CloudFormation console.
+11. To complete the group replication, you have to connect to the EC2 instances and run the following commands:
 
 ## Conclusion
 
