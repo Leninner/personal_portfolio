@@ -24,13 +24,13 @@ firewall-cmd --reload
 
 Now we need to configure another server with Nginx as a load balancer. To do this we need to edit a file `/etc/nginx/conf.d/filename.conf` and add the following lines:
 
-```bash
+```nginx
 log_format backendlog '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"';
 
 upstream backend {
-    server x.x.x.160
-    server x.x.x.161
-    server x.x.x.162
+    server x.x.x.160;
+    server x.x.x.161;
+    server x.x.x.162;
 }
 
 server {
@@ -52,7 +52,7 @@ systemctl restart nginx
 
 If you want to persist sessions between requests, you can use the `ip_hash` directive in the upstream block:
 
-```bash
+```nginx
 upstream backend {
     ip_hash; # <--- Add this line
     server x.x.x.160
@@ -63,7 +63,7 @@ upstream backend {
 
 If you want to send request to the server that has the least number of active connections, you can use the `least_conn` directive in the upstream block:
 
-```bash
+```nginx
 upstream backend {
     least_conn; # <--- Add this line
     server x.x.x.160

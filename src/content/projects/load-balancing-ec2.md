@@ -26,6 +26,8 @@ In AWS, you can use **Elastic Load Balancing** to automatically distribute incom
 
 It can handle the varying load of your application traffic in a **single** Availability Zone or **across multiple** Availability Zones. Elastic Load Balancing offers three types of load balancers that all feature the high availability, automatic scaling, and robust security necessary to make your applications fault tolerant.
 
+> **Disclairmer**: This projecy may incur in costs in your AWS account. Please be aware of that.
+
 ### Load Balancer Types
 
 Elastic Load Balancing supports these types of load balancers: Application Load Balancers, Network Load Balancers and Classic Load Balancers.
@@ -52,7 +54,9 @@ Elastic Load Balancing supports these types of load balancers: Application Load 
 
 ![Architecture](/content/projects/load-balancing-aws/architecture.png)
 
-In the above architecture, we have a load balancer that distributes incoming traffic across multiple EC2 instances. You can add and remove instances from your load balancer as your needs change, without disrupting the overall flow of requests to your application.
+In the above architecture, we have a load balancer that distributes incoming traffic across multiple EC2 instances. You can add and remove instances from your load balancer as your needs change, without disrupting the overall flow of requests to your application. 
+
+In this project, we are going to use **nginx** as our load balancer and **apache** as our web server. We are going to create a load balancing system with EC2 instances and CDK.
 
 ### Requirements
 
@@ -90,34 +94,21 @@ cdk init app --language typescript
 ```
 
 2. Create folder called `data` which will contain the user data scripts for the EC2 instances.
-3. In the `data` folder, create a file called `user-data-wordpress.sh` and add the following code:
+3. In the `data` folder, create a file called `user-data-server.sh` and add the following code:
 
-We are going to use `apache` as our web server and `php` for wordpress installation.
+We are going to use this script to install the web server using NGINX.
 
 ```bash
 #!/bin/bash
 yum update -y
 sudo su
 
-amazon-linux-extras install -y httpd2.4
-amazon-linux-extras install -y php7.2
+amazon-linux-extras install -y nginx1.12
 
-yum clean metadata
-yum install php-cli php-pdo php-fpm php-json php-mysqlnd -y
+systemctl start nginx
+systemctl enable nginx
 
-systemctl start php-fpm
-systemctl enable php-fpm
-
-wget https://wordpress.org/latest.tar.gz
-tar -xzf latest.tar.gz
-cp -r wordpress/* /var/www/html/
-rm -rf wordpress
-rm -rf latest.tar.gz
-
-chown -R apache:apache /var/www/html/
-
-systemctl start httpd
-systemctl enable httpd
+echo "Hello World from $(hostname -f)" > /usr/share/nginx/html/index.html
 ```
 
 4. In the `data` folder, create a file called `user-data-load-balancer.sh` and add the following code:
@@ -129,33 +120,26 @@ sudo su
 
 amazon-linux-extras install -y nginx1.12
 
+echo <<EOF > /etc/nginx/conf.d/load-balancer.conf
+upstream backend {
+    server
+    server 
+    server
+}
+
+server {
+    listen 80;
+    location / {
+        proxy_pass http://backend;
+    }
+}
+EOF
+
 systemctl start nginx
 systemctl enable nginx
 ```
 
-5. In the `data` folder, create a file called `user-data-mysql.sh` and add the following code:
-
-```bash
-#!/bin/bash
-yum update -y
-sudo su
-
-yum install -y mysql mysql-server
-systemctl start mysqld
-systemctl enable mysqld
-
-mysql_secure_installation <<EOF
-y
-your-secure-password
-your-secure-password
-y
-y
-y
-y
-EOF
-```
-
-6. In the `lib` folder, in the generated file `load-balancing-aws-stack.ts`, add the following code:
+5. In the `lib` folder, in the generated file `load-balancing-aws-stack.ts`, add the following code:
 
 This code is for the load balancer and the EC2 instances.
 
@@ -226,7 +210,7 @@ export class LoadBalancingAwsStack extends cdk.Stack {
 
     // Add the user data scripts to the instances
     const userDataLoadBalancer = readFileSync("./data/user-data-load-balancer.sh", "utf8");
-    const userDataWordpress = readFileSync("./data/user-data-wordpress.sh", "utf8");
+    const userDataWordpress = readFileSync("./data/user-data-server.sh", "utf8");
 
     loadBalancerInstance.addUserData(userDataLoadBalancer);
     webServerInstanceOne.addUserData(userDataWordpress);
@@ -235,98 +219,13 @@ export class LoadBalancingAwsStack extends cdk.Stack {
 }
 ```
 
-7. We have to create another stack in the `lib` folder. Create a new file called `replication-stack.ts` and add the following code:
-
-```typescript
-import * as cdk from "aws-cdk-lib";
-import { Construct } from "constructs";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { readFileSync } from "fs";
-
-export class ReplicationStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
-
-    // Set up the default VPC for the region
-    const vpc = ec2.Vpc.fromLookup(this, "VPC", {
-      isDefault: true,
-    });
-
-    // Create a security group with all outbound traffic allowed
-    const securityGroup = new ec2.SecurityGroup(this, "SecurityGroup", {
-      vpc,
-      description: "Allow SSH (TCP port 22) and HTTP (TCP port 80) in",
-      allowAllOutbound: true,
-    });
-
-    // Allow SSH and HTTP traffic in from anywhere
-    securityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(22),
-      "Allow SSH access from the world"
-    );
-
-    // Allow MySQL traffic in from anywhere
-    securityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(3306),
-      "Allow MySQL access from the world"
-    );
-
-    // Allow MySQL Group Replication traffic in from anywhere
-    securityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(33061),
-      "Allow MySQL Group Replication access from the world"
-    );
-
-    // Create an Amazon Machine image
-    const ami = new ec2.AmazonLinuxImage({
-      generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
-      cpuType: ec2.AmazonLinuxCpuType.X86_64,
-    });
-
-    // Create three EC2 instances using the AMI and Security Group
-    const instanceSqlOne = new ec2.Instance(this, "InstanceSqlOne", {
-      vpc,
-      instanceType: new ec2.InstanceType("t2.micro"),
-      machineImage: ami,
-      securityGroup,
-    });
-
-    const instanceSqlTwo = new ec2.Instance(this, "InstanceSqlTwo", {
-      vpc,
-      instanceType: new ec2.InstanceType("t2.micro"),
-      machineImage: ami,
-      securityGroup,
-    });
-
-    const instanceSqlThree = new ec2.Instance(this, "InstanceSqlThree", {
-      vpc,
-      instanceType: new ec2.InstanceType("t2.micro"),
-      machineImage: ami,
-      securityGroup,
-    });
-
-    // Read the user data script from the file system
-    const userData = readFileSync("./data/user-data-sql.sh", "utf8");
-
-    // Add the user data script to the instances
-    instanceSqlOne.addUserData(userData);
-    instanceSqlTwo.addUserData(userData);
-    instanceSqlThree.addUserData(userData);
-  }
-}
-```
-
-8. In the `bin` folder, in the generated file `load-balancing-aws.ts`, add the following code:
+6. In the `bin` folder, in the generated file `load-balancing-aws.ts`, add the following code:
 
 ```typescript
 #!/usr/bin/env node
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
 import { LoadBalancingAwsStack } from "../lib/load-balancing-aws-stack";
-import { ReplicationStack } from "../lib/replication-stack";
 
 const app = new cdk.App();
 
@@ -338,18 +237,9 @@ new LoadBalancingAwsStack(app, "LoadBalancingAwsStack", {
   stackName: "LoadBalancingAwsStack",
   description: "AWS CDK Load Balancing stack",
 });
-
-new ReplicationStack(app, "ReplicationStack", {
-  env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION,
-  },
-  stackName: "ReplicationStack",
-  description: "AWS CDK Replication stack",
-});
 ```
 
-9. To deploy:
+7. To deploy:
   - If you want to deploy to a specific environment, you would like to have an AWS Account for each environment. You can use the `cdk-deploy-to-[env].sh` script to deploy the stack to your AWS account. You can find the script in the root folder of the project.
 
   We are going to deploy to the `dev` environment, so create a file called `cdk-deploy-to-dev.sh` and add the following code:
@@ -376,7 +266,6 @@ bash cdk-deploy-to-dev.sh your-aws-account-id your-aws-region --profile your-aws
 ```
 
 11. After the deployment is complete, you can see the resources created in your AWS account going to the AWS CloudFormation console.
-12. To complete the group replication, you have to connect to the EC2 instances and run the following commands:
 
 ## Conclusion
 
