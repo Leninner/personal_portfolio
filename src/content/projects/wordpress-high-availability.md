@@ -1,5 +1,5 @@
 ---
-title: 'Distributed System with Wordpress and MySQL'
+title: 'Distributed System with Wordpress and MySQL using Virtual Box'
 type: 'Infrastructure'
 description: 'Sometimes in companies, you need to have a distributed system to avoid downtime. In this project, you can find the information related to the configuration of a web server with Nginx and PhP for Wordpress.'
 releaseDate: 'Nov 12 2023'
