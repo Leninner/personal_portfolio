@@ -1,85 +1,58 @@
 ---
-title: 'A load balancing system using Amazon Web Services (AWS)'
+title: 'Host a static website with AWS Cloud Development Kit'
 type: 'Cloud Computing'
-description: 'A load balancing system is a system that distributes incoming network traffic across multiple servers. This ensures no single server bears too much demand. By spreading the work evenly, load balancing improves application responsiveness. It also increases availability of applications and websites for users. Load balancing is performed by an algorithm known as a load balancer. In AWS, you can use Elastic Load Balancing to automatically distribute incoming traffic across multiple targets, such as Amazon EC2 instances, containers, IP addresses, and Lambda functions. It can handle the varying load of your application traffic in a single Availability Zone or across multiple Availability Zones. Elastic Load Balancing offers three types of load balancers that all feature the high availability, automatic scaling, and robust security necessary to make your applications fault tolerant.'
-releaseDate: 'Nov 20 2023'
-image: "/blog-placeholder-3.jpg"
+description: 'In this project, we are going to host a static website with AWS Cloud Development Kit. We are going to use AWS LAMBDA, AWS API GATEWAY, AWS S3, AWS CLOUDFRONT, AWS AMPLIFY and AWS DYNAMODB.'
+releaseDate: 'Dec 06 2023'
+image: "/blog-placeholder-4.jpg"
 ---
 **Summary**
 
-- [Introduction](#introduction)
-  - [Load Balancer Types](#load-balancer-types)
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
 - [Architecture](#architecture)
-  - [Requirements](#requirements)
 - [Implementation](#implementation)
-  - [Using Terraform](#using-terraform)
   - [Using CDK](#using-cdk)
+  - [Using Terraform](#using-terraform)
 - [Conclusion](#conclusion)
 
-## Introduction
-
-A **load balancing** system is a system that distributes incoming network traffic `across multiple servers`. This ensures no single server bears too much demand. By spreading the work evenly, load balancing improves application responsiveness. It also increases availability of applications and websites for users. Load balancing is performed by an algorithm `known as a load balancer`. 
-
-The load balancer distributes incoming client requests to computing resources such as application servers and databases. It also ensures availability and performance by monitoring the health of applications and only sending requests to servers and applications that can respond in a timely manner.
-
-In AWS, you can use **Elastic Load Balancing** to automatically distribute incoming traffic across multiple targets, such as Amazon EC2 instances, containers, IP addresses, and Lambda functions. 
-
-It can handle the varying load of your application traffic in a **single** Availability Zone or **across multiple** Availability Zones. Elastic Load Balancing offers three types of load balancers that all feature the high availability, automatic scaling, and robust security necessary to make your applications fault tolerant.
+## Overview
 
 > **Disclairmer**: This projecy may incur in costs in your AWS account. Please be aware of that.
 
-### Load Balancer Types
+In this tutorial, you will create a `simple serverless web application` that enables users to request unicorn rides from the **Wild Rydes fleet**. 
 
-Elastic Load Balancing supports these types of load balancers: Application Load Balancers, Network Load Balancers and Classic Load Balancers.
+The application will present users with an HTML-based user interface for indicating the location where they would like to be picked up and will interact with a RESTful web service on the backend to submit the request and dispatch a nearby unicorn. 
 
-**Application Load Balancer** 
+The application will also provide facilities for users to register with the service and log in before requesting rides.
 
-- Best suited for load balancing of **HTTP and HTTPS traffic** and provides advanced request routing targeted at the delivery of modern application architectures, including microservices and containers. 
-- Operating at the individual request level **(Layer 7)**.
-- Application Load Balancer routes traffic to targets within **Amazon Virtual Private Cloud (Amazon VPC)** based on the content of the request.
+## Prerequisites
 
-**Network Load Balancer** 
+You must have the following requirements:
 
-- Best suited for load balancing of Transmission Control Protocol **(TCP)**, User Datagram Protocol **(UDP)**, and Transport Layer Security **(TLS)** traffic where extreme performance is required. 
-- Operating at the connection level **(Layer 4)**. 
-- Network Load Balancer routes traffic to targets within **Amazon Virtual Private Cloud (Amazon VPC)** and is capable of handling millions of requests per second while maintaining ultra-low latencies.
-
-**Classic Load Balancer** 
-
-- Provides basic load balancing across multiple Amazon EC2 instances and operates at both the request level and connection level. Classic Load Balancer is intended for applications that were built within the EC2-Classic network.
-
-> You can read more about the load balancer types [here](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/load-balancer-types.html).
+- An AWS account and AWS CLI configured on your computer
+- Some knowledge about AWS services like Lambda, API Gateway, S3, CloudFront, Amplify, DynamoDB, etc.
+- A basic knowledge of Linux commands
+- **CDK CLI** and **Terraform** installed on your computer
+- An `ARCGIS` account, you can create one [here](https://www.arcgis.com/home/signin.html)
 
 ## Architecture
 
-![Architecture](/content/projects/load-balancing-aws/architecture.png)
+![Architecture](/content/projects/serverless-app/architecture.png)
 
-In the above architecture, we have a load balancer that distributes incoming traffic across multiple EC2 instances. You can add and remove instances from your load balancer as your needs change, without disrupting the overall flow of requests to your application. 
+The application architecture uses **AWS Lambda, Amazon API Gateway, Amazon DynamoDB, Amazon Cognito, and AWS Amplify Console**. 
 
-In this project, we are going to use **nginx** as our load balancer and **apache** as our web server. We are going to create a load balancing system with EC2 instances and CDK.
-
-### Requirements
-
-- An AWS account and AWS CLI configured on your computer
-- Some knowledge about AWS services like EC2, VPC, IAM, etc.
-- A basic knowledge of Linux commands
-- **CDK CLI** and **Terraform** installed on your computer
-- An IDE or text editor, I will be using **Visual Studio Code**
-
-> Remeber that if is the first time you are running the stacks in the region, you have to run the `cdk bootstrap` command to prepare the environment for the stacks.
+- Amplify Console provides continuous deployment and hosting of the static web resources including HTML, CSS, JavaScript, and image files which are loaded in the user's browser. 
+- JavaScript executed in the browser sends and receives data from a public backend API built using Lambda and API Gateway. 
+- Amazon Cognito provides user management and authentication functions to secure the backend API. Finally, DynamoDB provides a persistence layer where data can be stored by the API's Lambda function.
 
 ## Implementation
 
 For this project I will be using two approaches:
 
-- [Using Terraform](#using-terraform)
 - [Using AWS Cloud Development Kit](#using-cdk)
+- [Using Terraform](#using-terraform)
 
 These two approaches are very similar, CDK is proposed by AWS and Terraform is a third party tool. Both of them are great tools to create **infrastructure as code.**
-
-### Using Terraform
-
-Terraform is an open-source `infrastructure as code` software tool created by **HashiCorp**. It enables users to define and provision a datacenter infrastructure using a high-level configuration language known as Hashicorp Configuration Language (HCL), or optionally JSON.
 
 ### Using CDK
 
@@ -267,11 +240,16 @@ bash cdk-deploy-to-dev.sh your-aws-account-id your-aws-region --profile your-aws
 
 11. After the deployment is complete, you can see the resources created in your AWS account going to the AWS CloudFormation console.
 
+### Using Terraform
+
+Terraform is an open-source `infrastructure as code` software tool created by **HashiCorp**. It enables users to define and provision a datacenter infrastructure using a high-level configuration language known as Hashicorp Configuration Language (HCL), or optionally JSON.
+
+
 ## Conclusion
 
-Load balancing is an important concept in cloud computing. It helps to distribute incoming network traffic across multiple servers. In this project, we have created a load balancing system with EC2 instances and CDK.
+Writing **infrastructure as code** is a great way to provision and manage your cloud resources. It allows you to automate your infrastructure deployments and make them repeatable. CDK and Terraform are great tools to do that.
 
-CDK is a fantastic tool that allows you to create infrastructure as code. It is an open source software development framework to model and provision your cloud application resources using familiar programming languages. In this project, we have used CDK to create a load balancing system with EC2 instances.
-
+AWS Lambda is a great service to run your code without provisioning or managing servers. It is a serverless service that allows you to run your code for virtually any type of application or backend service and you can combine it with other AWS services to build powerful applications.
 
 If you liked this project, please follow me on [LinkedIn](https://www.linkedin.com/in/leninner), [Instagram]() and [GitHub](https://www.github.com/leninner) to stay tuned for more projects and **be sure** to check out my other [projects](/projects).
+
