@@ -12,6 +12,10 @@ image: "/blog-placeholder-4.jpg"
 - [Architecture](#architecture)
 - [Implementation](#implementation)
   - [Using CDK](#using-cdk)
+    - [1. Static Web Hosting](#1-static-web-hosting)
+    - [2. User Management](#2-user-management)
+    - [3. Serverless Backend](#3-serverless-backend)
+    - [4. RESTful API](#4-restful-api)
   - [Using Terraform](#using-terraform)
 - [Conclusion](#conclusion)
 
@@ -56,189 +60,174 @@ These two approaches are very similar, CDK is proposed by AWS and Terraform is a
 
 ### Using CDK
 
-The AWS Cloud Development Kit (AWS CDK) is a framework to model and provision your cloud application resources using familiar programming languages. AWS CDK provisions your resources in a safe, repeatable manner through **AWS CloudFormation**.
-
-1. Bootstrap an application using CDK CLI
+Create a new project using the following command:
 
 ```bash
-mkdir load-balancing-aws
-cd load-balancing-aws
+mkdir serverless-app && cd serverless-app
 cdk init app --language typescript
 ```
 
-2. Create folder called `data` which will contain the user data scripts for the EC2 instances.
-3. In the `data` folder, create a file called `user-data-server.sh` and add the following code:
+#### 1. Static Web Hosting
 
-We are going to use this script to install the web server using NGINX.
+AWS Amplify hosts static web resources including HTML, CSS, JavaScript, and image files which are loaded in the user's browser. We are going to configure AWS Amplify to host the static resources for your web application with **continuous deployment** built in.
 
-```bash
-#!/bin/bash
-yum update -y
-sudo su
+![Amplify](/content/projects/serverless-app/one.png)
 
-amazon-linux-extras install -y nginx1.12
+1. Create a new stack in the `/lib` folder called `static-site-stack.ts` and place the following code:
 
-systemctl start nginx
-systemctl enable nginx
-
-echo "Hello World from $(hostname -f)" > /usr/share/nginx/html/index.html
-```
-
-4. In the `data` folder, create a file called `user-data-load-balancer.sh` and add the following code:
-
-```bash
-#!/bin/bash
-yum update -y
-sudo su
-
-amazon-linux-extras install -y nginx1.12
-
-echo <<EOF > /etc/nginx/conf.d/load-balancer.conf
-upstream backend {
-    server
-    server 
-    server
-}
-
-server {
-    listen 80;
-    location / {
-        proxy_pass http://backend;
-    }
-}
-EOF
-
-systemctl start nginx
-systemctl enable nginx
-```
-
-5. In the `lib` folder, in the generated file `load-balancing-aws-stack.ts`, add the following code:
-
-This code is for the load balancer and the EC2 instances.
+2. We have to create a `CodeCommit` instance and also we have to set up an IAM user with Git credentials using the following code:
 
 ```typescript
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { readFileSync } from "fs";
+import * as codecommit from "aws-cdk-lib/aws-codecommit";
+import * as iam from "aws-cdk-lib/aws-iam";
 
-export class LoadBalancingAwsStack extends cdk.Stack {
+export class ServerlessAppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Set up the default VPC for the region
-    const vpc = ec2.Vpc.fromLookup(this, "VPC", {
-      isDefault: true,
+    const codeCommitRepository = this.createCodeCommitRepository();
+
+    const userForCodeCommit = this.createUserForCodeCommit(codeCommitRepository);
+
+    codeCommitRepository.grantPullPush(userForCodeCommit);
+
+    this.createCodeCommitRepoUrlOutput(codeCommitRepository);
+  }
+
+  private createCodeCommitRepository(): codecommit.Repository {
+    return new codecommit.Repository(this, "CodeCommitRepository", {
+      repositoryName: "wildrydes-site",
+      description: "Wild Rydes sample application for Serverless Stack",
+    });
+  }
+
+  private createUserForCodeCommit(repository: codecommit.Repository): iam.User {
+    const user = new iam.User(this, "UserForCodeCommit", {
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName("AWSCodeCommitPowerUser"),
+      ],
+      userName: "user-for-codecommit",
+      password: cdk.SecretValue.unsafePlainText('password'),
     });
 
-    // Create a security group with all outbound traffic allowed
-    const securityGroup = new ec2.SecurityGroup(this, "SecurityGroup", {
-      vpc,
-      description: "Allow SSH (TCP port 22) and HTTP (TCP port 80) in",
-      allowAllOutbound: true,
+    repository.grantPullPush(user);
+    return user;
+  }
+
+  private createCodeCommitRepoUrlOutput(repository: codecommit.Repository): void {
+    new cdk.CfnOutput(this, "CodeCommitRepoUrl", {
+      value: repository.repositoryCloneUrlHttp,
     });
-
-    // Allow SSH and HTTP traffic in from anywhere
-    securityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(22),
-      "Allow SSH access from the world"
-    );
-
-    // Allow SSH and HTTP traffic in from anywhere
-    securityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(80),
-      "Allow HTTP access from the world"
-    );
-
-    // Create an Amazon Machine image
-    const ami = new ec2.AmazonLinuxImage({
-      generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2,
-      cpuType: ec2.AmazonLinuxCpuType.X86_64,
-    });
-
-    // Create an instance for the load balancer
-    const loadBalancerInstance = new ec2.Instance(this, "LoadBalancerInstance", {
-      vpc,
-      instanceType: new ec2.InstanceType("t2.micro"),
-      machineImage: ami,
-      securityGroup,
-    })
-
-    // Create two instances for the web servers
-    const webServerInstanceOne = new ec2.Instance(this, "WebServerInstanceOne", {
-      vpc,
-      instanceType: new ec2.InstanceType("t2.micro"),
-      machineImage: ami,
-      securityGroup,
-    })
-
-    const webServerInstanceTwo = new ec2.Instance(this, "WebServerInstanceTwo", {
-      vpc,
-      instanceType: new ec2.InstanceType("t2.micro"),
-      machineImage: ami,
-      securityGroup,
-    })
-
-    // Add the user data scripts to the instances
-    const userDataLoadBalancer = readFileSync("./data/user-data-load-balancer.sh", "utf8");
-    const userDataWordpress = readFileSync("./data/user-data-server.sh", "utf8");
-
-    loadBalancerInstance.addUserData(userDataLoadBalancer);
-    webServerInstanceOne.addUserData(userDataWordpress);
-    webServerInstanceTwo.addUserData(userDataWordpress);
   }
 }
 ```
 
-6. In the `bin` folder, in the generated file `load-balancing-aws.ts`, add the following code:
+In the previous code, we are defining a `CodeCommit` repository and a user with permissions to push and pull from the repository. We are also creating an output with the repository URL.
 
-```typescript
-#!/usr/bin/env node
-import "source-map-support/register";
-import * as cdk from "aws-cdk-lib";
-import { LoadBalancingAwsStack } from "../lib/load-balancing-aws-stack";
-
-const app = new cdk.App();
-
-new LoadBalancingAwsStack(app, "LoadBalancingAwsStack", {
-  env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION,
-  },
-  stackName: "LoadBalancingAwsStack",
-  description: "AWS CDK Load Balancing stack",
-});
-```
-
-7. To deploy:
-  - If you want to deploy to a specific environment, you would like to have an AWS Account for each environment. You can use the `cdk-deploy-to-[env].sh` script to deploy the stack to your AWS account. You can find the script in the root folder of the project.
-
-  We are going to deploy to the `dev` environment, so create a file called `cdk-deploy-to-dev.sh` and add the following code:
-
-  ```bash
-  #!/usr/bin/env bash
-  if [[ $# -ge 2 ]]; then
-      export CDK_DEPLOY_ACCOUNT=$1
-      export CDK_DEPLOY_REGION=$2
-      shift; shift
-      npx cdk deploy "$@"
-      exit $?
-  else
-      echo 1>&2 "Provide account and region as first two args."
-      echo 1>&2 "Additional args are passed through to cdk deploy."
-      exit 1
-  fi
-  ```
-
-10. Run the `cdk-deploy-to-dev.sh` script to deploy the stack to your AWS account.
+3. Sync the code with the AWS Cloud using the following commands:
 
 ```bash
-bash cdk-deploy-to-dev.sh your-aws-account-id your-aws-region --profile your-aws-profile
+cdk synth
 ```
 
-11. After the deployment is complete, you can see the resources created in your AWS account going to the AWS CloudFormation console.
+4. Deploy the stack using the following command:
+
+```bash
+cdk deploy CodeCommitStack
+```
+
+5. Set up the repository locally using the following commands:
+
+```bash
+git config --global credential.helper '!aws codecommit credential-helper $@'
+git config --global credential.UseHttpPath true
+```
+
+6. Clone the repository using the following command:
+
+```bash
+git clone <the output of the CodeCommitRepoUrl generated in previous steps>
+```
+
+When the terminal asked you for credentials, use the credentials of the user you created in the previous steps.
+
+7. Copy the assets from a public S3 bucket using the following command:
+
+```bash
+cd wildrydes-site
+aws s3 cp s3://wildrydes-us-east-1/WebApplication/1_StaticWebHosting/website ./ --recursive
+```
+
+8. Add the files to the repository using the following commands:
+
+```bash
+git add .
+git commit -m "Add static website assets"
+git push
+```
+
+9. Enable web hosting with Amplify Console placing the following code in the `static-site-stack.ts` file:
+
+```typescript
+private createAmplifyHosting(repository: codecommit.Repository): void {
+    const amplifyApp = new amplify.CfnApp(this, "AmplifyHosting", {
+      name: "wildrydes-site",
+      repository: repository.repositoryCloneUrlHttp,
+      autoBranchCreationConfig: {
+        enableAutoBuild: true,
+        basicAuthConfig: {
+          enableBasicAuth: true,
+          username: "user-for-codecommit",
+          password: "password",
+        },
+      },
+    });
+
+    new amplify.CfnBranch(this, "MasterBranch", {
+      branchName: "master",
+      appId: amplifyApp.ref,
+    });
+
+    new cdk.CfnOutput(this, "AmplifyAppId", {
+      value: amplifyApp.ref,
+    });
+
+    new cdk.CfnOutput(this, "AmplifyAppUrl", {
+      value: `https://${amplifyApp.ref}.amplifyapp.com`,
+    });
+  }
+```
+
+And also, call the function in the constructor:
+
+```typescript
+this.createAmplifyHosting(codeCommitRepository);
+```
+
+10. Sync the code with the AWS Cloud using the following commands:
+
+```bash
+cdk synth
+```
+
+11. Deploy the stack using the following command:
+
+```bash
+cdk deploy CodeCommitStack
+```
+
+12. Go to the Amplify Console and check the deployment.
+13. Go to the `AmplifyAppUrl` output and check the website.
+
+#### 2. User Management
+
+Amazon Cognito provides user management and authentication functions to secure the backend API.
+
+#### 3. Serverless Backend
+
+#### 4. RESTful API
 
 ### Using Terraform
 
