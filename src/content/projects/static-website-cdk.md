@@ -170,34 +170,46 @@ git push
 
 9. Enable web hosting with Amplify Console placing the following code in the `static-site-stack.ts` file:
 
+In this function we are creating a service role which will be used by Amplify to access the repository and also we are creating an Amplify application and a default branch which will be the branch to deploy the website. And finally, we are creating two outputs, one with the **Amplify application ID** and another one with the **Amplify application URL.**
+
 ```typescript
 private createAmplifyHosting(repository: codecommit.Repository): void {
-    const amplifyApp = new amplify.CfnApp(this, "AmplifyHosting", {
-      name: "wildrydes-site",
-      repository: repository.repositoryCloneUrlHttp,
-      autoBranchCreationConfig: {
-        enableAutoBuild: true,
-        basicAuthConfig: {
-          enableBasicAuth: true,
-          username: "user-for-codecommit",
-          password: "password",
-        },
-      },
-    });
+  const amplifyServiceRole = new iam.Role(this, "AmplifyServiceRole", {
+    assumedBy: new iam.ServicePrincipal("amplify.amazonaws.com"),
+    roleName: "amplify-service-role-for-codecommit",
+    description: "Amplify service role",
+    inlinePolicies: {
+      AmplifyServiceRolePolicy: new iam.PolicyDocument({
+        statements: [
+          new iam.PolicyStatement({
+            actions: ["codecommit:GitPull"],
+            resources: [repository.repositoryArn],
+          }),
+        ],
+      }),
+    },
+  });
 
-    new amplify.CfnBranch(this, "MasterBranch", {
-      branchName: "master",
-      appId: amplifyApp.ref,
-    });
+  const amplifyApp = new amplify.CfnApp(this, "AmplifyHosting", {
+    name: "wildrydes-site",
+    repository: repository.repositoryCloneUrlHttp,
+    iamServiceRole: amplifyServiceRole.roleArn,
+  });
 
-    new cdk.CfnOutput(this, "AmplifyAppId", {
-      value: amplifyApp.ref,
-    });
+  new amplify.CfnBranch(this, "MainBranch", {
+    branchName: "main",
+    appId: amplifyApp.attrAppId,
+    enableAutoBuild: true,
+  });
 
-    new cdk.CfnOutput(this, "AmplifyAppUrl", {
-      value: `https://${amplifyApp.ref}.amplifyapp.com`,
-    });
-  }
+  new cdk.CfnOutput(this, "AmplifyAppId", {
+    value: amplifyApp.attrAppId,
+  });
+
+  new cdk.CfnOutput(this, "AmplifyAppUrl", {
+    value: `https://${amplifyApp.attrAppId}.amplifyapp.com`,
+  });
+}
 ```
 
 And also, call the function in the constructor:
@@ -206,7 +218,7 @@ And also, call the function in the constructor:
 this.createAmplifyHosting(codeCommitRepository);
 ```
 
-10. Sync the code with the AWS Cloud using the following commands:
+1.  Sync the code with the AWS Cloud using the following commands:
 
 ```bash
 cdk synth
@@ -220,6 +232,8 @@ cdk deploy CodeCommitStack
 
 12. Go to the Amplify Console and check the deployment.
 13. Go to the `AmplifyAppUrl` output and check the website.
+
+![amplify-result](/content/projects/serverless-app/amplify-result.png)
 
 #### 2. User Management
 
