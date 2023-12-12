@@ -69,11 +69,16 @@ cdk init app --language typescript
 
 #### 1. Static Web Hosting
 
-AWS Amplify hosts static web resources including HTML, CSS, JavaScript, and image files which are loaded in the user's browser. We are going to configure AWS Amplify to host the static resources for your web application with **continuous deployment** built in.
+**AWS Amplify** `hosts static web resources` including HTML, CSS, JavaScript, and image files which are loaded in the user's browser. We are going to configure AWS Amplify to host the static resources for your web application with **continuous deployment** built in.
 
 ![Amplify](/content/projects/serverless-app/one.png)
 
-1. Create a new stack in the `/lib` folder called `static-site-stack.ts` and place the following code:
+1. Create a new stack in the `/lib` folder called `static-site-stack.ts`
+
+```bash
+cd lib
+touch static-site-stack.ts
+```
 
 2. We have to create a `CodeCommit` instance and also we have to set up an IAM user with Git credentials using the following code:
 
@@ -218,7 +223,7 @@ And also, call the function in the constructor:
 this.createAmplifyHosting(codeCommitRepository);
 ```
 
-1.  Sync the code with the AWS Cloud using the following commands:
+10.  Sync the code with the AWS Cloud using the following commands:
 
 ```bash
 cdk synth
@@ -230,8 +235,7 @@ cdk synth
 cdk deploy CodeCommitStack
 ```
 
-12. Go to the Amplify Console and check the deployment.
-13. Go to the `AmplifyAppUrl` output and check the website.
+12. Go to the Amplify Console and check the deployment and also see the `AmplifyAppUrl` output and check the website.
 
 ![amplify-result](/content/projects/serverless-app/amplify-result.png)
 
