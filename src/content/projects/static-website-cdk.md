@@ -21,7 +21,7 @@ image: "/blog-placeholder-4.jpg"
 
 ## Overview
 
-> **Disclairmer**: This projecy may incur in costs in your AWS account. Please be aware of that.
+> **Disclairmer**: This project may incur in costs in your AWS account. **Please be aware.**
 
 In this tutorial, you will create a `simple serverless web application` that enables users to request unicorn rides from the **Wild Rydes fleet**. 
 
