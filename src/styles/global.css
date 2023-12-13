@@ -93,12 +93,16 @@ pre > code {
 }
 blockquote {
   margin: 10px 0;
-	border-left: 4px solid var(--accent);
-	padding: 0 0 0 20px;
-	font-size: 1em;
-  font-style: italic;
-  color: rgb(var(--gray));
+	padding: 10px 20px;
+	font-size: 16px;
+  color: #4f4f4f;
+  background-color: #f1f1ef;
 }
+
+blockquote > p {
+  margin: 0 !important;
+}
+
 hr {
 	border: none;
 	border-top: 1px solid rgb(var(--gray-light));
