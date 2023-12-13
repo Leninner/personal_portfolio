@@ -625,5 +625,5 @@ Building a high availability cluster is not an easy task, but it is not impossib
 
 Remember that high availability is not the same as load balancing. You can read more about this [here](https://www.digitalocean.com/community/tutorials/what-is-high-availability).
 
-If you liked this project, please follow me on [LinkedIn](https://www.linkedin.com/in/leninner), [Instagram]() and [GitHub](https://www.github.com/leninner) to stay tuned for more projects and **be sure** to check out my other [projects](/projects).
+> If you liked this project, please **follow me** on [LinkedIn](https://www.linkedin.com/in/leninner), [Instagram]() and [GitHub](https://www.github.com/leninner) to stay tuned for more projects and **be sure** to check out my other [projects](/projects).
 
