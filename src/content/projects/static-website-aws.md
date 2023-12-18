@@ -1,5 +1,5 @@
 ---
-title: 'Host a static website with AWS Cloud Development Kit'
+title: 'Host a static website with AWS CDK and Terraform using Amazon Web Services'
 type: 'Cloud Computing'
 description: 'In this project, we are going to host a static website with AWS Cloud Development Kit. We are going to use AWS LAMBDA, AWS API GATEWAY, AWS S3, AWS CLOUDFRONT, AWS AMPLIFY and AWS DYNAMODB.'
 releaseDate: 'Dec 06 2023'
@@ -359,6 +359,26 @@ Complete the registration form and choose Let's Ryde. You can use your own email
 Important: Copy and save the auth token in order to create the Amazon Cognito user pool authorizer in the next module.
 
 #### 3. Serverless Backend
+
+In this section we will create a serverless backend using **AWS Lambda, Amazon API Gateway, and Amazon DynamoDB** to handle the requests from the web application.
+
+![Backend](/content/projects/serverless-app/three.png)
+
+We will implement a **Lambda** function which will be invoked every time a user requests a unicorn ride. The function will store the request in a **DynamoDB** table and then publish a message to an **SNS** topic to notify the appropriate unicorn handler that a new ride request is available.
+
+1. We have to create a new stack in the `/lib` folder called `backend-stack.ts`
+
+```bash
+cd lib/
+touch backend-stack.ts
+```
+
+2. We have to create a `DynamoDB` table using the following code:
+
+```typescript
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
+```
 
 #### 4. RESTful API
 
