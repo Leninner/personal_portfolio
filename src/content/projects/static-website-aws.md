@@ -156,8 +156,6 @@ git config --global credential.UseHttpPath true
 git clone <the output of the CodeCommitRepoUrl generated in previous steps>
 ```
 
-When the terminal asked you for credentials, use the credentials of the user you created in the previous steps.
-
 7. Copy the assets from a public S3 bucket using the following command:
 
 ```bash
@@ -173,7 +171,7 @@ git commit -m "Add static website assets"
 git push
 ```
 
-9. Enable web hosting with Amplify Console placing the following code in the `static-site-stack.ts` file:
+9. Enable web hosting with Amplify Console placing the following functions next to the previous functions:
 
 In this function we are creating a service role which will be used by Amplify to access the repository and also we are creating an Amplify application and a default branch which will be the branch to deploy the website. And finally, we are creating two outputs, one with the **Amplify application ID** and another one with the **Amplify application URL.**
 
@@ -207,6 +205,17 @@ private createAmplifyHosting(repository: codecommit.Repository): void {
     enableAutoBuild: true,
   });
 
+  const emailSender = new email.EmailIdentity(this, "Email sender", {
+    identity: {
+      value: "email-address-to-verify",
+    },
+  });
+
+  new cdk.CfnOutput(this, "SesIdentityName", {
+    value: emailSender.emailIdentityName,
+    exportName: "SesIdentityName",
+  });
+
   new cdk.CfnOutput(this, "AmplifyAppId", {
     value: amplifyApp.attrAppId,
   });
@@ -216,6 +225,8 @@ private createAmplifyHosting(repository: codecommit.Repository): void {
   });
 }
 ```
+
+> Note that we are creating an `emailSender` variable. This variable will be used to verify the email address you are going to use in the next steps. Please verify the email address you are going to use in the next steps seeing the email in your inbox or seing your spam folder.
 
 And also, call the function in the constructor:
 
@@ -235,7 +246,7 @@ cdk synth
 cdk deploy CodeCommitStack
 ```
 
-12. Go to the Amplify Console and check the deployment and also see the `AmplifyAppUrl` output and check the website.
+12.  Go to the Amplify Console and check the deployment and also see the `AmplifyAppUrl` output and check the website in `https://main.<AmplifyAppId>.amplifyapp.com`
 
 ![amplify-result](/content/projects/serverless-app/amplify-result.png)
 
@@ -269,11 +280,14 @@ export class UserPoolStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const emailSender = new email.EmailIdentity(this, "Email sender", {
-      identity: {
-        value: 'your-email-address',
+    const codeCommitStack = new CodeCommitStack(this, "CodeCommitStack", {
+      env: {
+        region: "us-east-1",
+        account: "749710350214",
       },
     });
+
+    const emailSender = codeCommitStack.node.tryGetContext("SesIdentityName");
 
     const userPool = new congnito.UserPool(this, "UserPool", {
       userPoolName: "WildRydes",
@@ -281,7 +295,8 @@ export class UserPoolStack extends cdk.Stack {
         username: true,
       },
       email: congnito.UserPoolEmail.withSES({
-        fromEmail: emailSender.emailIdentityName,
+        fromEmail: emailSender,
+        fromName: "Wild Rydes",
       }),
     });
 
@@ -702,12 +717,13 @@ git push
 
 Terraform is an open-source `infrastructure as code` software tool created by **HashiCorp**. It enables users to define and provision a datacenter infrastructure using a high-level configuration language known as Hashicorp Configuration Language (HCL), or optionally JSON.
 
-
 ## Conclusion
 
 Writing **infrastructure as code** is a great way to provision and manage your cloud resources. It allows you to automate your infrastructure deployments and make them repeatable. CDK and Terraform are great tools to do that.
 
 AWS Lambda is a great service to run your code without provisioning or managing servers. It is a serverless service that allows you to run your code for virtually any type of application or backend service and you can combine it with other AWS services to build powerful applications.
+
+You can see the entire code of this project in my [GitHub](). Remember that this project is based on the [AWS Serverless Web Application Workshop](https://aws.amazon.com/getting-started/hands-on/build-serverless-web-app-lambda-apigateway-s3-dynamodb-cognito/)
 
 > If you liked this project, please **follow me** on [LinkedIn](https://www.linkedin.com/in/leninner), [Instagram]() and [GitHub](https://www.github.com/leninner) to stay tuned for more projects and **be sure** to check out my other [projects](/projects).
 
