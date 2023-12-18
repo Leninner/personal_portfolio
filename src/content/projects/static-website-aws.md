@@ -17,6 +17,7 @@ image: "/blog-placeholder-4.jpg"
     - [3. Serverless Backend](#3-serverless-backend)
     - [4. RESTful API](#4-restful-api)
   - [Using Terraform](#using-terraform)
+- [Recommendation](#recommendation)
 - [Conclusion](#conclusion)
 
 ## Overview
@@ -716,6 +717,10 @@ git push
 ### Using Terraform
 
 Terraform is an open-source `infrastructure as code` software tool created by **HashiCorp**. It enables users to define and provision a datacenter infrastructure using a high-level configuration language known as Hashicorp Configuration Language (HCL), or optionally JSON.
+
+## Recommendation
+
+Remember that the final result of the project is directly related to the **AWS Serverless Web Applications Workshop**. I recommend that you follow the workshop to understand the project and also to learn more about AWS services. Also, I recommend that if any errors occur in the actual `production code`(not the code related to the infrastructure), you forget about it and **make sure the infrastructure is working correctly**.
 
 ## Conclusion
 
