@@ -16,6 +16,7 @@ image: "/blog-placeholder-4.jpg"
     - [2. User Management](#2-user-management)
     - [3. Serverless Backend](#3-serverless-backend)
     - [4. RESTful API](#4-restful-api)
+    - [5. Clean Up](#5-clean-up)
   - [Using Terraform](#using-terraform)
 - [Recommendation](#recommendation)
 - [Conclusion](#conclusion)
@@ -74,59 +75,40 @@ cdk init app --language typescript
 
 ![Amplify](/content/projects/serverless-app/one.png)
 
-1. Create a new stack in the `/lib` folder called `static-site-stack.ts`
+1. Create a new stack in the `/lib` folder called `code-commit-stack.ts`
 
 ```bash
-cd lib
-touch static-site-stack.ts
+cd lib/
+touch code-commit-stack.ts
 ```
 
 2. We have to create a `CodeCommit` instance and also we have to set up an IAM user with Git credentials using the following code:
 
 ```typescript
-import * as cdk from "aws-cdk-lib";
-import { Construct } from "constructs";
-import * as codecommit from "aws-cdk-lib/aws-codecommit";
-import * as iam from "aws-cdk-lib/aws-iam";
+private createCodeCommitRepository(): codecommit.Repository {
+  return new codecommit.Repository(this, "CodeCommitRepository", {
+    repositoryName: "wildrydes-site",
+    description: "Wild Rydes sample application for Serverless Stack",
+  });
+}
 
-export class ServerlessAppStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+private createUserForCodeCommit(repository: codecommit.Repository): iam.User {
+  const user = new iam.User(this, "UserForCodeCommit", {
+    managedPolicies: [
+      iam.ManagedPolicy.fromAwsManagedPolicyName("AWSCodeCommitPowerUser"),
+    ],
+    userName: "user-for-codecommit",
+    password: cdk.SecretValue.unsafePlainText('password'),
+  });
 
-    const codeCommitRepository = this.createCodeCommitRepository();
+  repository.grantPullPush(user);
+  return user;
+}
 
-    const userForCodeCommit = this.createUserForCodeCommit(codeCommitRepository);
-
-    codeCommitRepository.grantPullPush(userForCodeCommit);
-
-    this.createCodeCommitRepoUrlOutput(codeCommitRepository);
-  }
-
-  private createCodeCommitRepository(): codecommit.Repository {
-    return new codecommit.Repository(this, "CodeCommitRepository", {
-      repositoryName: "wildrydes-site",
-      description: "Wild Rydes sample application for Serverless Stack",
-    });
-  }
-
-  private createUserForCodeCommit(repository: codecommit.Repository): iam.User {
-    const user = new iam.User(this, "UserForCodeCommit", {
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName("AWSCodeCommitPowerUser"),
-      ],
-      userName: "user-for-codecommit",
-      password: cdk.SecretValue.unsafePlainText('password'),
-    });
-
-    repository.grantPullPush(user);
-    return user;
-  }
-
-  private createCodeCommitRepoUrlOutput(repository: codecommit.Repository): void {
-    new cdk.CfnOutput(this, "CodeCommitRepoUrl", {
-      value: repository.repositoryCloneUrlHttp,
-    });
-  }
+private createCodeCommitRepoUrlOutput(repository: codecommit.Repository): void {
+  new cdk.CfnOutput(this, "CodeCommitRepoUrl", {
+    value: repository.repositoryCloneUrlHttp,
+  });
 }
 ```
 
@@ -229,10 +211,54 @@ private createAmplifyHosting(repository: codecommit.Repository): void {
 
 > Note that we are creating an `emailSender` variable. This variable will be used to verify the email address you are going to use in the next steps. Please verify the email address you are going to use in the next steps seeing the email in your inbox or seing your spam folder.
 
-And also, call the function in the constructor:
+The final result of the class is:
 
 ```typescript
-this.createAmplifyHosting(codeCommitRepository);
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
+import * as codecommit from "aws-cdk-lib/aws-codecommit";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as amplify from "aws-cdk-lib/aws-amplify";
+import * as email from "aws-cdk-lib/aws-ses";
+
+export class CodeCommitStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+    super(scope, id, props);
+
+    const codeCommitRepository = this.createCodeCommitRepository();
+
+    const userForCodeCommit =
+      this.createUserForCodeCommit(codeCommitRepository);
+
+    if (userForCodeCommit) {
+      codeCommitRepository.grantPullPush(userForCodeCommit);
+    }
+
+    this.createAmplifyHosting(codeCommitRepository);
+
+    this.createCodeCommitRepoUrlOutput(codeCommitRepository);
+  }
+
+  private createCodeCommitRepository(): codecommit.Repository {
+    // code
+  }
+
+  private createUserForCodeCommit(
+    repository: codecommit.Repository
+  ): iam.User | null {
+    // code
+  }
+
+  private createCodeCommitRepoUrlOutput(
+    repository: codecommit.Repository
+  ): void {
+    // code
+  }
+
+  private createAmplifyHosting(repository: codecommit.Repository): void {
+    //code
+  }
+}
 ```
 
 10.  Sync the code with the AWS Cloud using the following commands:
@@ -274,26 +300,24 @@ Make sure to replace the `your-email-address` with your email address. In this c
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as congnito from "aws-cdk-lib/aws-cognito";
-import * as email from "aws-cdk-lib/aws-ses";
-import * as apigateway from "aws-cdk-lib/aws-apigateway";
 
 export class UserPoolStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+    this.generateUserPool();
+  }
 
-    const codeCommitStack = new CodeCommitStack(this, "CodeCommitStack", {
-      env: {
-        region: "us-east-1",
-        account: "749710350214",
-      },
-    });
-
-    const emailSender = codeCommitStack.node.tryGetContext("SesIdentityName");
+  private generateUserPool() {
+    const emailSender = cdk.Fn.importValue("SesIdentityName");
 
     const userPool = new congnito.UserPool(this, "UserPool", {
       userPoolName: "WildRydes",
       signInAliases: {
         username: true,
+      },
+      selfSignUpEnabled: true,
+      userVerification: {
+        emailSubject: "Verify your email for our WildRydes app!",
       },
       email: congnito.UserPoolEmail.withSES({
         fromEmail: emailSender,
@@ -306,22 +330,17 @@ export class UserPoolStack extends cdk.Stack {
       userPoolClientName: "WildRydesWebApp",
     });
 
-    new apigateway.CognitoUserPoolsAuthorizer(
-      this,
-      "CognitoAuthorizer",
-      {
-        authorizerName: "WildRydes",
-        cognitoUserPools: [userPool],
-        identitySource: "method.request.header.Authorization",
-      }
-    );
-
     new cdk.CfnOutput(this, "UserPoolId", {
       value: userPool.userPoolId,
     });
 
     new cdk.CfnOutput(this, "UserPoolClientId", {
       value: userPoolClient.userPoolClientId,
+    });
+
+    new cdk.CfnOutput(this, "UserPoolArn", {
+      value: userPool.userPoolArn,
+      exportName: "userPoolArn",
     });
   }
 }
@@ -366,7 +385,7 @@ git commit -m "Add Cognito User Pool credentials"
 git push
 ```
 
-8. In a Finder window or Windows File Explorer, navigate to the wildrydes-site folder you copied to your local machine in Module 1. 
+8. In a Finder window or Windows File Explorer, navigate to the wildrydes-site folder you copied to your local machine in Module 1.
 
 9. Open /register.html, or choose the Giddy Up! button on the homepage (index.html page) of your site.
 Complete the registration form and choose Let's Ryde. You can use your own email or enter a fake email. Make sure to choose a password that contains at least one upper-case letter, a number, and a special character. Don't forget the password you entered for later. You should see an alert that confirms that your user has been created.
@@ -383,7 +402,6 @@ Complete the registration form and choose Let's Ryde. You can use your own email
 11. After confirming the new user using either the /verify.html page or the Cognito console, visit /signin.html and log in using the email address and password you entered during the registration step.
 
 12. If successful you should be redirected to /ride.html. You should see a notification that the API is not configured.
-Important: Copy and save the auth token in order to create the Amazon Cognito user pool authorizer in the next module.
 
 #### 3. Serverless Backend
 
@@ -494,16 +512,7 @@ exports.handler = (event, context, callback) => {
 
     const rideId = toUrlString(randomBytes(16));
     console.log('Received event (', rideId, '): ', event);
-
-    // Because we're using a Cognito User Pools authorizer, all of the claims
-    // included in the authentication token are provided in the request context.
-    // This includes the username as well as other attributes.
     const username = event.requestContext.authorizer.claims['cognito:username'];
-
-    // The body field of the event in a proxy integration is a raw string.
-    // In order to extract meaningful values, we need to first parse this string
-    // into an object. A more robust implementation might inspect the Content-Type
-    // header first and use a different parsing strategy based on that value.
     const requestBody = JSON.parse(event.body);
 
     const pickupLocation = requestBody.PickupLocation;
@@ -511,12 +520,6 @@ exports.handler = (event, context, callback) => {
     const unicorn = findUnicorn(pickupLocation);
 
     recordRide(rideId, username, unicorn).then(() => {
-        // You can use the callback function to provide a return value from your Node.js
-        // Lambda functions. The first parameter is used for failed invocations. The
-        // second parameter specifies the result data of the invocation.
-
-        // Because this Lambda function is called by an API Gateway proxy integration
-        // the result object must use the following structure.
         callback(null, {
             statusCode: 201,
             body: JSON.stringify({
@@ -531,18 +534,10 @@ exports.handler = (event, context, callback) => {
         });
     }).catch((err) => {
         console.error(err);
-
-        // If there is an error during processing, catch it and return
-        // from the Lambda function successfully. Specify a 500 HTTP status
-        // code and provide an error message in the body. This will provide a
-        // more meaningful error response to the end client.
         errorResponse(err.message, context.awsRequestId, callback)
     });
 };
 
-// This is where you would implement logic to find the optimal unicorn for
-// this ride (possibly invoking another Lambda function as a microservice.)
-// For simplicity, we'll just pick a unicorn at random.
 function findUnicorn(pickupLocation) {
     console.log('Finding unicorn for ', pickupLocation.Latitude, ', ', pickupLocation.Longitude);
     return fleet[Math.floor(Math.random() * fleet.length)];
@@ -630,16 +625,26 @@ private generateResourceAndMethod(
     }
   );
 
-  const userPool = new userPoolStack.UserPoolStack(this, "UserPoolStack");
-  const authorizerId = userPool.node.tryGetContext(
-    "AuthorizerIdForApiGateway"
+  const userPoolArn = cdk.Fn.importValue("userPoolArn");
+  const userPool = congnito.UserPool.fromUserPoolArn(
+    this,
+    "CognitoUserPool",
+    userPoolArn
+  );
+
+  const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
+    this,
+    "CognitoUserPoolsAuthorizer",
+    {
+      cognitoUserPools: [userPool],
+      identitySource: "method.request.header.Authorization",
+      authorizerName: "CognitoUserPoolsAuthorizer",
+    }
   );
 
   rides.addMethod("POST", requestRideIntegration, {
     authorizationType: apigateway.AuthorizationType.COGNITO,
-    authorizer: {
-      authorizerId,
-    },
+    authorizer,
   });
 }
 ```
@@ -714,6 +719,21 @@ git push
 
 8. Go to the website and request a ride. You should see a notification that the ride request was successful.
 
+#### 5. Clean Up
+
+1. Delete the stacks using the following commands:
+
+```bash
+cdk destroy BackendStack
+cdk destroy UserPoolStack
+cdk destroy CodeCommitStack
+```
+
+2. Delete the resources that `CloudFormation` can't
+   - DynamoDB Table
+   - User
+   - User Pool de AWS Cognito
+
 ### Using Terraform
 
 Terraform is an open-source `infrastructure as code` software tool created by **HashiCorp**. It enables users to define and provision a datacenter infrastructure using a high-level configuration language known as Hashicorp Configuration Language (HCL), or optionally JSON.
@@ -730,7 +750,7 @@ Writing **infrastructure as code** is a great way to provision and manage your c
 
 AWS Lambda is a great service to run your code without provisioning or managing servers. It is a serverless service that allows you to run your code for virtually any type of application or backend service and you can combine it with other AWS services to build powerful applications.
 
-You can see the entire code of this project in my [GitHub](https://www.github.com/leninner). Remember that this project is based on the [AWS Serverless Web Application Workshop](https://aws.amazon.com/getting-started/hands-on/build-serverless-web-app-lambda-apigateway-s3-dynamodb-cognito/)
+You can see the entire code of this project in my [GitHub](https://github.com/Leninner/cloud/tree/main/aws/cdk/serverless-app). Remember that this project is based on the [AWS Serverless Web Application Workshop](https://aws.amazon.com/getting-started/hands-on/build-serverless-web-app-lambda-apigateway-s3-dynamodb-cognito/)
 
 > If you liked this project, please **follow me** on [LinkedIn](https://www.linkedin.com/in/leninner), [Instagram](https://www.instagram.com/leninner/) and [GitHub](https://www.github.com/leninner) to stay tuned for more projects and **be sure** to check out my other [projects](/projects).
 
