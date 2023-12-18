@@ -256,13 +256,14 @@ touch user-pool-stack.ts
 
 2. We have to create a `Cognito User Pool` and a `Cognito User Pool Client` using the following code:
 
-Make sure to replace the `your-email-address` with your email address.
+Make sure to replace the `your-email-address` with your email address. In this case, we also have to create an authorizer for the API Gateway. We will use the `CognitoUserPoolsAuthorizer` class to create the authorizer. This class will create a new Cognito User Pool Authorizer and attach it to the API Gateway.
 
 ```typescript
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as congnito from "aws-cdk-lib/aws-cognito";
 import * as email from "aws-cdk-lib/aws-ses";
+import * as apigateway from "aws-cdk-lib/aws-apigateway";
 
 export class UserPoolStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -270,7 +271,7 @@ export class UserPoolStack extends cdk.Stack {
 
     const emailSender = new email.EmailIdentity(this, "Email sender", {
       identity: {
-        value: "your-email-address",
+        value: 'your-email-address',
       },
     });
 
@@ -288,6 +289,16 @@ export class UserPoolStack extends cdk.Stack {
       userPool,
       userPoolClientName: "WildRydesWebApp",
     });
+
+    new apigateway.CognitoUserPoolsAuthorizer(
+      this,
+      "CognitoAuthorizer",
+      {
+        authorizerName: "WildRydes",
+        cognitoUserPools: [userPool],
+        identitySource: "method.request.header.Authorization",
+      }
+    );
 
     new cdk.CfnOutput(this, "UserPoolId", {
       value: userPool.userPoolId,
@@ -373,14 +384,319 @@ cd lib/
 touch backend-stack.ts
 ```
 
-2. We have to create a `DynamoDB` table using the following code:
+2. We have to create a `DynamoDB` table creating a function inside the class:
+
+```typescript
+private createDynamoDBTable(): dynamodb.Table {
+  const ridesTable = new dynamodb.Table(this, "Rides", {
+    tableName: "Rides",
+    partitionKey: {
+      name: "RideId",
+      type: dynamodb.AttributeType.STRING,
+    },
+  });
+
+  new cdk.CfnOutput(this, "RidesTableARN", {
+    value: ridesTable.tableArn,
+    description: "The ARN of the Rides table",
+  });
+
+  return ridesTable;
+}
+```
+
+3. We have to create an `IAM Role` for the Lambda function. This role will grants your Lambda function permission to write logs to Amazon CloudWatch Logs and access to write items to your DynamoDB table. Put the following code inside the constructor:
+
+```typescript
+private generateLambdaRole(tableArn: string): iam.Role {
+  return new iam.Role(this, "LambdaRoleForLambda", {
+    roleName: "WildRydesLambdaRole",
+    assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+    managedPolicies: [
+      iam.ManagedPolicy.fromAwsManagedPolicyName(
+        "service-role/AWSLambdaBasicExecutionRole"
+      ),
+    ],
+    inlinePolicies: {
+      DynamoDBWriteAccess: new iam.PolicyDocument({
+        statements: [
+          new iam.PolicyStatement({
+            actions: ["dynamodb:PutItem"],
+            resources: [tableArn],
+          }),
+        ],
+      }),
+    },
+  });
+}
+```
+
+4. We have to create a lambda function using the following code:
+
+```typescript
+private generateLambdaFunction(role: iam.Role) {
+  new lambda.Function(this, "RequestRideFunction", {
+    functionName: "RequestUnicorn",
+    role: role,
+    runtime: lambda.Runtime.NODEJS_16_X,
+    handler: "ridesUnicorn.handler",
+    code: lambda.Code.fromAsset("../lambda/ridesUnicorn.js"),
+  });
+}
+```
+
+You also have to create a folder called `lambda` in the root of the project and create a file called `ridesUnicorn.js` with the following code:
+
+```javascript
+const randomBytes = require('crypto').randomBytes;
+const AWS = require('aws-sdk');
+const ddb = new AWS.DynamoDB.DocumentClient();
+
+const fleet = [
+    {
+        Name: 'Angel',
+        Color: 'White',
+        Gender: 'Female',
+    },
+    {
+        Name: 'Gil',
+        Color: 'White',
+        Gender: 'Male',
+    },
+    {
+        Name: 'Rocinante',
+        Color: 'Yellow',
+        Gender: 'Female',
+    },
+];
+
+exports.handler = (event, context, callback) => {
+    if (!event.requestContext.authorizer) {
+      errorResponse('Authorization not configured', context.awsRequestId, callback);
+      return;
+    }
+
+    const rideId = toUrlString(randomBytes(16));
+    console.log('Received event (', rideId, '): ', event);
+
+    // Because we're using a Cognito User Pools authorizer, all of the claims
+    // included in the authentication token are provided in the request context.
+    // This includes the username as well as other attributes.
+    const username = event.requestContext.authorizer.claims['cognito:username'];
+
+    // The body field of the event in a proxy integration is a raw string.
+    // In order to extract meaningful values, we need to first parse this string
+    // into an object. A more robust implementation might inspect the Content-Type
+    // header first and use a different parsing strategy based on that value.
+    const requestBody = JSON.parse(event.body);
+
+    const pickupLocation = requestBody.PickupLocation;
+
+    const unicorn = findUnicorn(pickupLocation);
+
+    recordRide(rideId, username, unicorn).then(() => {
+        // You can use the callback function to provide a return value from your Node.js
+        // Lambda functions. The first parameter is used for failed invocations. The
+        // second parameter specifies the result data of the invocation.
+
+        // Because this Lambda function is called by an API Gateway proxy integration
+        // the result object must use the following structure.
+        callback(null, {
+            statusCode: 201,
+            body: JSON.stringify({
+                RideId: rideId,
+                Unicorn: unicorn,
+                Eta: '30 seconds',
+                Rider: username,
+            }),
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+            },
+        });
+    }).catch((err) => {
+        console.error(err);
+
+        // If there is an error during processing, catch it and return
+        // from the Lambda function successfully. Specify a 500 HTTP status
+        // code and provide an error message in the body. This will provide a
+        // more meaningful error response to the end client.
+        errorResponse(err.message, context.awsRequestId, callback)
+    });
+};
+
+// This is where you would implement logic to find the optimal unicorn for
+// this ride (possibly invoking another Lambda function as a microservice.)
+// For simplicity, we'll just pick a unicorn at random.
+function findUnicorn(pickupLocation) {
+    console.log('Finding unicorn for ', pickupLocation.Latitude, ', ', pickupLocation.Longitude);
+    return fleet[Math.floor(Math.random() * fleet.length)];
+}
+
+function recordRide(rideId, username, unicorn) {
+    return ddb.put({
+        TableName: 'Rides',
+        Item: {
+            RideId: rideId,
+            User: username,
+            Unicorn: unicorn,
+            RequestTime: new Date().toISOString(),
+        },
+    }).promise();
+}
+
+function toUrlString(buffer) {
+    return buffer.toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+}
+
+function errorResponse(errorMessage, awsRequestId, callback) {
+  callback(null, {
+    statusCode: 500,
+    body: JSON.stringify({
+      Error: errorMessage,
+      Reference: awsRequestId,
+    }),
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+```
+
+#### 4. RESTful API
+
+This section will create a **RESTful API** using **Amazon API Gateway** to expose the Lambda function we created in the previous section. Also, the code of this module will be placed in the same file as the previous module.
+
+![API](/content/projects/serverless-app/four.png)
+
+1. We have to create an `API Gateway` using the following code:
+
+```typescript
+private generateApiGateway(): apigateway.RestApi {
+  const api = new apigateway.RestApi(this, "WildRydesApi", {
+    restApiName: "WildRydes",
+    endpointTypes: [apigateway.EndpointType.EDGE],
+    deployOptions: {
+      stageName: "prod",
+    },
+  });
+
+  new cdk.CfnOutput(this, "ApiEndpoint", {
+    value: api.url,
+  });
+
+  return api;
+}
+```
+
+> **Note:** Use `edge-optimized` endpoint types for public services being accessed from the Internet. Regional endpoints are typically used for APIs that are accessed primarily from within the same AWS Region.
+
+2. We have to create a `resource` and a `method` for the API Gateway using the following code:
+
+```typescript
+private generateResourceAndMethod(
+  api: apigateway.RestApi,
+  lambdaFunction: lambda.Function
+) {
+  const rides = api.root.addResource("ride", {
+    defaultCorsPreflightOptions: {
+      allowOrigins: apigateway.Cors.ALL_ORIGINS,
+      allowMethods: apigateway.Cors.ALL_METHODS,
+    },
+  });
+
+  const requestRideIntegration = new apigateway.LambdaIntegration(
+    lambdaFunction,
+    {
+      proxy: true,
+    }
+  );
+
+  const userPool = new userPoolStack.UserPoolStack(this, "UserPoolStack");
+  const authorizerId = userPool.node.tryGetContext(
+    "AuthorizerIdForApiGateway"
+  );
+
+  rides.addMethod("POST", requestRideIntegration, {
+    authorizationType: apigateway.AuthorizationType.COGNITO,
+    authorizer: {
+      authorizerId,
+    },
+  });
+}
+```
+
+3. The final code of the `backend-stack.ts` file should be like this:
 
 ```typescript
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as apigateway from "aws-cdk-lib/aws-apigateway";
+import * as userPoolStack from "./user-pool-stack";
+
+export class BackendStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+    super(scope, id, props);
+
+    const ridesTable = this.createDynamoDBTable();
+    const lambdaRole = this.generateLambdaRole(ridesTable.tableArn);
+    const lambda = this.generateLambdaFunction(lambdaRole);
+    const api = this.generateApiGateway();
+    this.generateResourceAndMethod(api, lambda);
+  }
+
+  private createDynamoDBTable(): dynamodb.Table {
+    // the code
+  }
+
+  private generateLambdaRole(tableArn: string): iam.Role {
+    // the code
+  }
+
+  private generateLambdaFunction(role: iam.Role): lambda.Function {
+    // the code
+  }
+
+  private generateApiGateway(): apigateway.RestApi {
+    // the code
+  }
+
+  private generateResourceAndMethod(
+    api: apigateway.RestApi,
+    lambdaFunction: lambda.Function
+  ) {
+    // the code
+  }
+}
 ```
 
-#### 4. RESTful API
+4. Sync the code with the AWS Cloud using the following commands:
+
+```bash
+cdk synth
+```
+
+5. Deploy the stack using the following command:
+
+```bash
+cdk deploy BackendStack
+```
+
+6. Go to the AWS CloudFormation Console and check the `ApiEndpoint` output. Copy the URL and paste it in the `js/config.js` file in the `invokeUrl` variable.
+7. Commit the changes using the following commands:
+
+```bash
+git add .
+git commit -m "Add API Gateway endpoint"
+git push
+```
+
+8. Go to the website and request a ride. You should see a notification that the ride request was successful.
 
 ### Using Terraform
 
