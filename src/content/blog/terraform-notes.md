@@ -237,3 +237,79 @@ To query the outputs after applying the configuration, use the terraform output 
 ```bash
 terraform output
 ```
+
+## Terraform languaje
+
+The Terraform language is declarative, describing an intended goal rather than the steps to reach that goal. 
+
+The ordering of blocks and the files they are organized into are generally not significant; Terraform only considers implicit and explicit relationships between resources when **determining an order** of operations.
+
+```terraform
+resource "aws_vpc" "main" {
+  cidr_block = var.base_cidr_block
+}
+
+<BLOCK TYPE> "<BLOCK LABEL>" "<BLOCK LABEL>" {
+  # Block body
+  <IDENTIFIER> = <EXPRESSION> # Argument
+}
+```
+
+- **Block type** defines an object which can be a resource, data source, provider, or provisioner. Block types are defined by the provider, and multiple providers can define blocks of the same type.
+- **Block label** is a name given to a block which is used to refer to it elsewhere in the same Terraform configuration. Block labels are unique within a single Terraform configuration and can be more than one word.
+- **Argument** is a configuration item assigned a value within a block. Arguments are represented by identifier = expression pairs within a block.
+  - **Identifier** is a specific configuration item within a block, which varies depending on the type of block. For example, the name argument within the aws_instance resource block is an identifier.
+  - **Expression** is the value assigned to an argument, either directly or via a variable reference, function call, template interpolation, etc.
+
+### Example
+
+```terraform
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 1.0.4"
+    }
+  }
+}
+
+variable "aws_region" {}
+
+variable "base_cidr_block" {
+  description = "A /16 CIDR range definition, such as 10.1.0.0/16, that the VPC will use"
+  default = "10.1.0.0/16"
+}
+
+variable "availability_zones" {
+  description = "A list of availability zones in which to create subnets"
+  type = list(string)
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+
+resource "aws_vpc" "main" {
+  # Referencing the base_cidr_block variable allows the network address
+  # to be changed without modifying the configuration.
+  cidr_block = var.base_cidr_block
+}
+
+resource "aws_subnet" "az" {
+  # Create one subnet for each given availability zone.
+  count = length(var.availability_zones)
+
+  # For each subnet, use one of the specified availability zones.
+  availability_zone = var.availability_zones[count.index]
+
+  # By referencing the aws_vpc.main object, Terraform knows that the subnet
+  # must be created only after the VPC is created.
+  vpc_id = aws_vpc.main.id
+
+  # Built-in functions and operators can be used for simple transformations of
+  # values, such as computing a subnet address. Here we create a /20 prefix for
+  # each subnet, using consecutive addresses for each availability zone,
+  # such as 10.1.16.0/20 .
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 4, count.index+1)
+}
+```
