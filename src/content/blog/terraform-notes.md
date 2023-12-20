@@ -313,3 +313,52 @@ resource "aws_subnet" "az" {
   cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 4, count.index+1)
 }
 ```
+
+### Files and directories
+
+Terraform languaje is stored in plain text files with the `.tf` file extension. Also, there is a `JSON variant` of the Terraform language that is named `.tf.json`.
+
+The files are usually called `configuration files` and these files must use **utf-8** encoding and LF(Unix style) or CRLF(Windows style) line endings.
+
+#### Directories
+
+A **module** is a collection of `.tf` and/or `.tf.json` files kept together in a directory. Consists of only the set of **top-level** configuration files. Also, the nested directories are not considered part of the module.
+
+#### Root module
+
+Terraform always runs in the context of a **single root module**, which consists in the `terraform configuration file and the tree of child modules`
+
+- In **Terraform CLI** the root directory is the current working directory when Terraform is run. 
+- In **Terraform Cloud and Terraform Enterprise**, the root module for a workspace defaults to the top level of the configuration directory
+
+### Override Files
+
+Terrafom expects that every directory defines a distinct set of configuration objects, if so, Terraform will return an error. However, you can use override files to define a subset of configuration objects.
+
+See the following example:
+
+- You define a resource in `main.tf`:
+
+```terraform
+resource "aws_instance" "web" {
+  instance_type = "t2.micro"
+  ami           = "ami-408c7f28"
+}
+```
+
+- Then, you can override the resource in `override.tf`:
+
+```terraform
+resource "aws_instance" "web" {
+  ami = "foo"
+}
+```
+
+- Terraform will merge the latter with the former, behaving as if the original configuration had been the following:
+
+```terraform
+resource "aws_instance" "web" {
+  instance_type = "t2.micro"
+  ami           = "foo"
+}
+```
