@@ -34,7 +34,7 @@ In this demo we are going to create a nginx docker container locally.
 
 First, we need to create a file called `main.tf` and add the following code:
 
-```terraform
+```hcl
 terraform {
   required_providers {
     docker = {
@@ -119,7 +119,7 @@ touch main.tf
 
 4. Paste the following code into `main.tf`:
 
-```terraform
+```hcl
 terraform {
   required_providers {
     aws = {
@@ -184,7 +184,7 @@ Variables are a great way to define centrally controlled reusable values in Terr
 
 Variables are defined in Terraform configuration using the `variable` block:
 
-```terraform
+```hcl
 variable "instance_name" {
   description = "Value of the Name tag for the EC2 instance"
   type        = string
@@ -196,7 +196,7 @@ variable "instance_name" {
 
 Variables can be used in expressions to concisely refer to values that are not known until the configuration is applied. For example, we can use the `instance_name` variable we defined above in the `tags` argument of the `aws_instance` resource:
 
-```terraform
+```hcl
 resource "aws_instance" "app_server" {
   ami           = "ami-0230bd60aa48260c6"
   instance_type = "t2.micro"
@@ -220,7 +220,7 @@ Outputs are a way to tell Terraform what data is important. This data is outputt
 
 To define an output value, use the output block in your configuration:
 
-```terraform
+```hcl
 output "instance_id" {
   description = "ID of the EC2 instance"
   value       = aws_instance.app_server.id
@@ -244,7 +244,7 @@ The Terraform language is declarative, describing an intended goal rather than t
 
 The ordering of blocks and the files they are organized into are generally not significant; Terraform only considers implicit and explicit relationships between resources when **determining an order** of operations.
 
-```terraform
+```hcl
 resource "aws_vpc" "main" {
   cidr_block = var.base_cidr_block
 }
@@ -263,7 +263,7 @@ resource "aws_vpc" "main" {
 
 ### Example
 
-```terraform
+```hcl
 terraform {
   required_providers {
     aws = {
@@ -331,7 +331,7 @@ Terraform always runs in the context of a **single root module**, which consists
 - In **Terraform CLI** the root directory is the current working directory when Terraform is run. 
 - In **Terraform Cloud and Terraform Enterprise**, the root module for a workspace defaults to the top level of the configuration directory
 
-### Override Files
+#### Override Files
 
 Terrafom expects that every directory defines a distinct set of configuration objects, if so, Terraform will return an error. However, you can use override files to define a subset of configuration objects.
 
@@ -339,7 +339,7 @@ See the following example:
 
 - You define a resource in `main.tf`:
 
-```terraform
+```hcl
 resource "aws_instance" "web" {
   instance_type = "t2.micro"
   ami           = "ami-408c7f28"
@@ -348,7 +348,7 @@ resource "aws_instance" "web" {
 
 - Then, you can override the resource in `override.tf`:
 
-```terraform
+```hcl
 resource "aws_instance" "web" {
   ami = "foo"
 }
@@ -356,9 +356,72 @@ resource "aws_instance" "web" {
 
 - Terraform will merge the latter with the former, behaving as if the original configuration had been the following:
 
-```terraform
+```hcl
 resource "aws_instance" "web" {
   instance_type = "t2.micro"
   ami           = "foo"
 }
+```
+
+### Sintax
+
+#### Configuration sintax
+
+Describe the native grammar of the Terraform language.
+
+##### Arguments and blocks
+
+Terraform languaje sintax is based on **blocks** and **arguments**. A block is a container for other content and can contain multiple arguments within it.
+
+###### Argument
+
+An argument assigns a value to a particular name:
+
+```hcl
+<!-- <ARGUMENT> = <VALUE> -->
+image_id = "ami-abc123"
+```
+
+###### Block
+
+A block is a container for other content and can contain multiple arguments within it:
+
+```hcl
+resource "aws_instance" "example" {
+  ami = "abc123"
+
+  network_interface {
+    # ...
+  }
+}
+```
+
+A block can have a `type` (**resource** in the previous example) and each block type defines how many labels it expects and what each label means.
+
+In the case of the `resource` block type, the first label is the resource type and the second label is the resource name.
+
+##### Identifiers
+
+Argument names, block type names, and the names of most Terraform-specific constructs like resources, input variables, etc. **are all identifiers.**
+
+Identifiers can contain letters, digits, underscores (_), and hyphens (-). The first character of an identifier must not be a digit, to avoid ambiguity with literal numbers.
+
+For complete identifier rules, Terraform implements the Unicode identifier syntax, extended to include the ASCII hyphen character -.
+
+##### Comments
+
+Terraform supports three styles of comments:
+
+```hcl
+# This is a comment
+```
+
+```hcl
+// This is a comment
+```
+
+```hcl
+/* 
+This is a comment 
+*/
 ```
