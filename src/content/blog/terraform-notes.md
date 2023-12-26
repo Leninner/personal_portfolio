@@ -7,11 +7,17 @@ heroImage: "/blog-placeholder-4.jpg"
 tags: ["cloud", "infrastructure", "terraform"]
 ---
 
+## What is Terraform?
+
+Terraform is a tool for building, changing and versioning infrastructure safely and efficiently. Is a infrastructure as code tool.
+
+Enables application software best practices to infrastructure and is compatible with many cloud providers.
+
 ## What is infrastructure as code?
 
 Infrastructure as code (IaC) is the process of managing and provisioning computer data centers through **machine-readable definition files**, rather than physical **hardware configuration or interactive** configuration tools.
 
-`Terraform` is a Hashicorp tool for building infrastructure as code and it has a lot of advantages:
+`Terraform` has a lot of advantages:
 
 - **Multi-cloud**: Can manage infrastructure for multiple cloud providers (AWS, Azure, GCP, etc) and private cloud providers (VMware, OpenStack, etc).
 - **Human-readable**: Helps you write infrastructure as code quickly
@@ -175,6 +181,41 @@ terraform show
 ```bash
 terraform destroy
 ```
+
+## Common Patterns
+
+**Provisioning + Config management**
+
+- Provisioning: Create the infrastructure
+- Config management: Configure the infrastructure
+- Terraform is a provisioning tool, not a config management tool
+- Terraform + Ansible could be a great combination
+
+**Provisioning + Server Templating**
+
+- Provisioning: Create the infrastructure
+- Server Templating: Pre configure the servers that we are going to use later.
+- Terraform + Packer
+
+**Provisioning + Orchestration**
+
+- Provisioning: Create the infrastructure
+- Orchestration: Manage the infrastructure
+- Terraform + Kubernetes
+
+## Terraform Architecture
+
+**Terraform core**
+
+1. Terraform state
+   - The state is used by Terraform to map real world resources to your configuration, keep track of metadata, and to improve performance for large infrastructures.
+
+2. Terraform config
+   - The configuration is the set of files in which you describe the infrastructure you want Terraform to manage.
+
+**Providers**
+
+- Are responsible for understanding **API interactions** with the different cloud providers and exposing resources. Each provider is its own encapsulated binary distributed separately from Terraform itself. This allows for a plugin-based model where new providers can be installed without Terraform getting updated.
 
 ## Defining variables
 
