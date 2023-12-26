@@ -217,11 +217,13 @@ terraform destroy
 
 - Are responsible for understanding **API interactions** with the different cloud providers and exposing resources. Each provider is its own encapsulated binary distributed separately from Terraform itself. This allows for a plugin-based model where new providers can be installed without Terraform getting updated.
 
-## Defining variables
+## Variable types
 
 Variables are a great way to define centrally controlled reusable values in Terraform. They can be used to reduce duplication between configurations or to create reusable configuration modules.
 
-### Variable definition
+### Input variables
+
+Input varianles are parameters for a Terraform module. They are used to assign values to variables used in the module configuration.
 
 Variables are defined in Terraform configuration using the `variable` block:
 
@@ -233,51 +235,206 @@ variable "instance_name" {
 }
 ```
 
-### Variable usage
-
-Variables can be used in expressions to concisely refer to values that are not known until the configuration is applied. For example, we can use the `instance_name` variable we defined above in the `tags` argument of the `aws_instance` resource:
+To reference a variable value, use the `var` prefix followed by the variable name:
 
 ```hcl
-resource "aws_instance" "app_server" {
-  ami           = "ami-0230bd60aa48260c6"
-  instance_type = "t2.micro"
+var.<name>
+```
 
-  tags = {
-    Name = var.instance_name
-  }
+### Local variables
+
+Are local to a module and are not passed in or out of it. They are used to reduce duplication within a module or to compute derived values.
+
+Local variables are declared with the `locals` block:
+
+```hcl
+locals {
+  service_name = "example"
+  owner        = "terraform"  
 }
 ```
 
-### Variable assignment
+To reference a local value, use the `local` prefix followed by the local name:
+
+```hcl
+local.<name>
+```
+
+### Output variables
+
+Defines the return value of a resource and **makes it available for use** by other resources.
+
+Output variables are defined using the `output` block:
+
+```hcl
+output "instance_id" {
+  value       = aws_instance.app_server.id
+}
+```
+
+### Setting input variables
+
+We can use the following methods to set input variables:
+
+- **Command line flags**
+- **From a file**
+- **From environment variables**
+- **From the Terraform Cloud or Terraform Enterprise API**
+
+Example:
 
 ```bash
 terraform apply -var="instance_name=web_server"
 ```
 
-## Outputs
+The variables can have different types:
 
-Outputs are a way to tell Terraform what data is important. This data is outputted when apply is called, and can be queried using the terraform output command.
+**Primitive types**
 
+- **string**
+- **number**
+- **bool**
 
-To define an output value, use the output block in your configuration:
+**Complex types**
+
+- **list(<type>)**
+- **set(<type>)**
+- **map(<type>)**
+- **object({<attr name> = <type>, ...})**
+- **tuple([<type>])**
+
+**Validation**
+
+- Type checking happens automatically
+- Custom conditions can also be enforced
+
+We can also define **sensitive data**
 
 ```hcl
-output "instance_id" {
-  description = "ID of the EC2 instance"
-  value       = aws_instance.app_server.id
-}
-
-output "instance_public_ip" {
-  description = "Public IP address of the EC2 instance"
-  value       = aws_instance.app_server.public_ip
+variable "password" {
+  type = string
+  sensitive = true
 }
 ```
 
-To query the outputs after applying the configuration, use the terraform output command:
+## Project organization and modules
+
+**Modules** are self-contained packages of Terraform configurations that are managed as a group. Modules are used to create reusable components, improve organization, and to treat pieces of infrastructure as a black box.
+
+- Why modules? 
+  - **Reusability**
+  - **Abstraction**
+  - **Encapsulation**
+
+- Types of modules
+  - **Root module**: Default module containing all the .tf file of the main **working** directory
+  - **Child module**: A separate external module referred from a .tf file 
+
+Modules can be used from different sources:
+
+- **Local path**: A filesystem path to a directory of Terraform configuration files
+- **Terraform Registry**: A public registry of Terraform modules
+- **Github**: A public git repository
+- Etc...
+
+- Local path example:
+
+```hcl
+module "web-app" {
+  source = "./web-app"
+}
+```
+
+- Terraform registry
+
+```hcl
+module "consul" {
+  source = "hashicorp/consul/aws"
+  version = "0.1.0"
+}
+```
+
+- Github
+
+```hcl
+module "consul" {
+  source = "github.com/hashicorp/example"
+}
+```
+
+Inputs variables are passed in via module block
+
+```hcl
+module "web_app" {
+  source = "./web-app"
+
+  # input variables
+  instance_type = "t2.micro"
+  availability_zone = "us-east-1a"
+
+  # meta-arguments
+  count = 3
+}
+```
+
+- What makes a good module?
+  - **Raises the abstraction level from base resource types**
+  - **Groups resources in a logical fashion**
+  - **Exposes input variables to allow necessary customization + cmposition**
+  - **Provides useful defaults**
+  - **Returns outputs to make further integrations possible**
+
+## Managing multiple environments
+
+One config, multiple environments
+
+### Workspaces
+
+Multiple named sections within a single backend
+
+**Pros**
+- Easy to get started
+- COnvenient terraform.workspace expression
+- Minimizes code duplication
+
+**Cons**
+- Prone to human error
+- State stored within same backend
+- Codebase doesn't unambiguously show deployment configurations
+
+To create a new workspace:
 
 ```bash
-terraform output
+terraform workspace new production
 ```
+
+To see the workspaces:
+
+```bash
+terraform workspace list
+```
+
+To use the workspace in terraform files:
+
+```hcl
+locals {
+  environment = terraform.workspace
+}
+```
+
+### File structure
+
+Directory layout provides separation, modules provide reuse
+
+**Pros**
+- Isolated of backends
+  - Improved security
+  - Decreased potencial for human error
+- Codebase fully represents deployed state
+
+**Cons**
+- Multiple **terraform apply** required to provision environments
+- Mode code duplication, but can be minimized with modules
 
 ## Terraform languaje
 
