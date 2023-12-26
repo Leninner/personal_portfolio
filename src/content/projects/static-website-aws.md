@@ -20,6 +20,8 @@ image: "/blog-placeholder-4.jpg"
   - [Using Terraform](#using-terraform)
     - [1. Static Web Hosting](#1-static-web-hosting-1)
     - [2. User Management](#2-user-management-1)
+    - [3. Serverless Backend](#3-serverless-backend-1)
+    - [4. Deploy the infrastructure](#4-deploy-the-infrastructure)
 - [Recommendation](#recommendation)
 - [Conclusion](#conclusion)
 
@@ -740,13 +742,9 @@ cdk destroy CodeCommitStack
 
 Terraform is an open-source `infrastructure as code` software tool created by **HashiCorp**. It enables users to define and provision a datacenter infrastructure using a high-level configuration language known as Hashicorp Configuration Language (HCL), or optionally JSON.
 
-#### 1. Static Web Hosting
+> You can see the previous section to understand the resources we are going to create in this section.
 
-**AWS Amplify** `hosts static web resources` including HTML, CSS, JavaScript, and image files which are loaded in the user's browser. We are going to configure AWS Amplify to host the static resources for your web application with **continuous deployment** built in.
-
-![Amplify](/content/projects/serverless-app/one.png)
-
-1. Create a new folder called `serverless-app` and create a folder inside called `code-commit`. Create a file called `main.tf` inside the `code-commit` folder with the following code:
+First, create a folder called `serverless-app` and inside create a file called `main.tf` with the following code:
 
 ```hcl
 terraform {
@@ -763,11 +761,61 @@ terraform {
 provider "aws" {
   region = "us-east-1"
 }
+
+module "code_commit_module" {
+  source = "./modules/code_commit"
+}
+
+module "user_pool_module" {
+  source     = "./modules/user_pool"
+  depends_on = [module.code_commit_module]
+
+  email_sender = var.email_sender
+}
+
+module "backend_module" {
+  source     = "./modules/backend_module"
+  depends_on = [module.user_pool_module]
+
+  user_pool_arn = module.user_pool_module.user_pool_arn
+}
 ```
 
-In the previous code we are defining the `aws` provider and the `region` where we are going to deploy the resources.
+and a file called `variables.tf` with the following code:
 
-1. Create a `resources.tf` file to define the resources we are going to use:
+```hcl
+variable "email_sender" {
+  type = string
+  default = "mazabandalenin180@gmail.com"
+}
+```
+
+Also, create a folder called `modules` where we are going to create the following modules:
+
+#### 1. Static Web Hosting
+
+**AWS Amplify** `hosts static web resources` including HTML, CSS, JavaScript, and image files which are loaded in the user's browser. We are going to configure AWS Amplify to host the static resources for your web application with **continuous deployment** built in.
+
+![Amplify](/content/projects/serverless-app/one.png)
+
+1. Create a folder inside called `code_commit`, inside this folder, create a new file called `main.tf` inside the with the following code:
+
+```hcl
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.31.0"
+    }
+  }
+
+  required_version = ">= 1.6.6"
+}
+```
+
+In the previous code we are defining the `aws` provider where we are going to deploy the resources.
+
+2. Create a `resources.tf` file to define the resources we are going to use:
 
 ```hcl
 resource "aws_codecommit_repository" "wildrydes_site" {
@@ -787,9 +835,13 @@ resource "aws_iam_user_login_profile" "user_for_codecommit_password" {
   password_length = 8
 }
 
+data "aws_iam_policy" "codecommit_user_policy" {
+  arn = "arn:aws:iam::aws:policy/AWSCodeCommitPowerUser"
+}
+
 resource "aws_iam_user_policy_attachment" "user_for_codecommit_policy" {
   user       = aws_iam_user.user_for_codecommit.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSCodeCommitPowerUser"
+  policy_arn = data.aws_iam_policy.codecommit_user_policy.arn
 }
 
 resource "aws_iam_policy" "codecommit_user_policy" {
@@ -863,15 +915,9 @@ resource "aws_amplify_branch" "main" {
   branch_name = "main"
   app_id      = aws_amplify_app.wildrydes_site.id
 }
-
-resource "aws_ses_email_identity" "email_sender" {
-  email = "<your email>"
-}
 ```
 
-You must verify the email address you are going to use in the next steps seeing the email in your inbox or seing your spam folder. Also, you can see the [CodeCommit] approach to understand the resources.
-
-2. Create a `outputs.tf` file to define the outputs we are going to use:
+3. Create a `outputs.tf` file to define the outputs we are going to use:
 
 ```hcl
 output "amplify_app_id" {
@@ -895,25 +941,378 @@ output "username" {
 }
 ```
 
-3. Initialize the project using the following command:
+#### 2. User Management
+
+When users visit our website they will first register a new user account. We are going to use **Amazon Cognito** to manage user registration and authentication for our application.
+
+When users have a confirmed account they will be able to log in and by doing so they will receive a JSON Web Token (JWT) which they can use to access the backend API.
+
+![Cognito](/content/projects/serverless-app/two.png)
+
+1. Create a new folder called `user_pool` and create a file called `main.tf` with the following code:
+
+```hcl
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.31.0"
+    }
+  }
+
+  required_version = ">= 1.6.6"
+}
+```
+
+2. Create a `resources.tf` file to define the resources we are going to use:
+
+```hcl
+resource "aws_ses_email_identity" "email_sender" {
+  email = var.email_sender
+}
+
+resource "aws_cognito_user_pool" "wild_rydes" {
+  name                       = "WildRydes"
+  alias_attributes           = ["preferred_username"]
+  email_verification_message = "Your verification code is {####}."
+  email_verification_subject = "Your verification code for WildRydes"
+
+  email_configuration {
+    email_sending_account = "DEVELOPER"
+    from_email_address    = var.email_sender
+    source_arn            = aws_ses_email_identity.email_sender.arn
+  }
+}
+
+resource "aws_cognito_user_pool_client" "wildRydes_web_app" {
+  name         = "WildRydesWebApp"
+  user_pool_id = aws_cognito_user_pool.wild_rydes.id
+}
+```
+
+3. Create a file called `outputs.tf` with the following:
+
+```hcl
+output "user_pool_arn" {
+  value = aws_cognito_user_pool.wild_rydes.arn
+}
+```
+
+4. Create a file called `variables.tf` with the following:
+
+```hcl
+variable "email_sender" {
+  type = string
+}
+```
+
+#### 3. Serverless Backend
+
+In this section we will create a serverless backend using **AWS Lambda, Amazon API Gateway, and Amazon DynamoDB** to handle the requests from the web application.
+
+![Backend](/content/projects/serverless-app/three.png)
+
+1. Create a folder called `backend_module` and create a file called `main.tf` with the following code:
+
+```hcl
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.31.0"
+    }
+  }
+
+  required_version = ">= 1.6.6"
+}
+```
+
+2. Create a file called `resources.tf` with the following code:
+
+```hcl
+resource "aws_dynamodb_table" "rides" {
+  name     = "Rides"
+  hash_key = "RideId"
+  billing_mode = "PAY_PER_REQUEST"
+  attribute {
+    name = "RideId"
+    type = "S"
+  }
+}
+
+data "aws_iam_policy" "AWSLambdaBasicExecutionRole" {
+  arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role" "wild_rydes_lambda_role" {
+  name                = "WildRydesLambdaRole"
+  managed_policy_arns = [data.aws_iam_policy.AWSLambdaBasicExecutionRole.arn]
+  inline_policy {
+    name = "WildRydesLambdaRoleInlinePolicy"
+    policy = jsonencode({
+      "Version" : "2012-10-17",
+      "Statement" : [
+        {
+          "Action" : [
+            "dynamodb:PutItem",
+          ],
+          "Resource" : [
+            aws_dynamodb_table.rides.arn
+          ],
+          "Effect" : "Allow"
+        },
+      ]
+    })
+  }
+  assume_role_policy = jsonencode(
+    {
+      "Version" : "2012-10-17",
+      "Statement" : [
+        {
+          "Action" : [
+            "sts:AssumeRole"
+          ],
+          "Effect" : "Allow",
+          "Principal" : {
+            "Service" : [
+              "lambda.amazonaws.com"
+            ]
+          }
+        },
+      ]
+    }
+  )
+}
+
+data "archive_file" "lambda" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/rides.js"
+  output_path = "${path.module}/lambda/rides.zip"
+}
+
+resource "aws_lambda_function" "request_unicorn" {
+  role          = aws_iam_role.wild_rydes_lambda_role.arn
+  function_name = "RequestUnicorn"
+  runtime       = "nodejs16.x"
+  filename      = data.archive_file.lambda.output_path
+  handler       = "rides.handler"
+  timeout       = 30
+}
+
+resource "aws_api_gateway_rest_api" "wild_rydes_api" {
+  name = "WildRydes"
+  endpoint_configuration {
+    types = ["EDGE"]
+  }
+}
+
+resource "aws_api_gateway_authorizer" "cognito_pool_authorizer" {
+  name            = "CognitoUserPoolsAuthorizer"
+  rest_api_id     = aws_api_gateway_rest_api.wild_rydes_api.id
+  type            = "COGNITO_USER_POOLS"
+  identity_source = "method.request.header.Authorization"
+  provider_arns   = [var.user_pool_arn]
+}
+
+resource "aws_api_gateway_resource" "resource" {
+  path_part   = "resource"
+  parent_id   = aws_api_gateway_rest_api.wild_rydes_api.root_resource_id
+  rest_api_id = aws_api_gateway_rest_api.wild_rydes_api.id
+}
+
+resource "aws_api_gateway_method" "wild_rydes_post_method" {
+  rest_api_id   = aws_api_gateway_rest_api.wild_rydes_api.id
+  resource_id   = aws_api_gateway_resource.resource.id
+  http_method   = "POST"
+  authorizer_id = aws_api_gateway_authorizer.cognito_pool_authorizer.id
+  authorization = "COGNITO_USER_POOLS"
+
+  request_parameters = {
+    "method.request.path.proxy" = true
+  }
+}
+
+resource "aws_api_gateway_integration" "wild_rydes_api_lambda" {
+  rest_api_id             = aws_api_gateway_rest_api.wild_rydes_api.id
+  resource_id             = aws_api_gateway_resource.resource.id
+  http_method             = aws_api_gateway_method.wild_rydes_post_method.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.request_unicorn.invoke_arn
+}
+
+resource "aws_api_gateway_deployment" "wild_rydes_api" {
+  depends_on = [aws_api_gateway_integration.wild_rydes_api_lambda]
+
+  rest_api_id = aws_api_gateway_rest_api.wild_rydes_api.id
+  stage_name  = "production"
+}
+
+resource "aws_lambda_permission" "apigw_lambda" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.request_unicorn.function_name
+  principal     = "apigateway.amazonaws.com"
+}
+```
+
+3. Create a file called `variables.tf` with the following code:
+
+```hcl
+variable "user_pool_arn" {
+  description = "The ARN of the user pool"
+}
+```
+
+4. Create a folder called `lambda` and inside it, create a file called `rides.js` with the following code:
+
+```js
+const randomBytes = require('crypto').randomBytes;
+const AWS = require('aws-sdk');
+const ddb = new AWS.DynamoDB.DocumentClient();
+
+const fleet = [
+    {
+        Name: 'Angel',
+        Color: 'White',
+        Gender: 'Female',
+    },
+    {
+        Name: 'Gil',
+        Color: 'White',
+        Gender: 'Male',
+    },
+    {
+        Name: 'Rocinante',
+        Color: 'Yellow',
+        Gender: 'Female',
+    },
+];
+
+exports.handler = (event, context, callback) => {
+    if (!event.requestContext.authorizer) {
+      errorResponse('Authorization not configured', context.awsRequestId, callback);
+      return;
+    }
+
+    const rideId = toUrlString(randomBytes(16));
+    console.log('Received event (', rideId, '): ', event);
+
+    // Because we're using a Cognito User Pools authorizer, all of the claims
+    // included in the authentication token are provided in the request context.
+    // This includes the username as well as other attributes.
+    const username = event.requestContext.authorizer.claims['cognito:username'];
+
+    // The body field of the event in a proxy integration is a raw string.
+    // In order to extract meaningful values, we need to first parse this string
+    // into an object. A more robust implementation might inspect the Content-Type
+    // header first and use a different parsing strategy based on that value.
+    const requestBody = JSON.parse(event.body);
+
+    const pickupLocation = requestBody.PickupLocation;
+
+    const unicorn = findUnicorn(pickupLocation);
+
+    recordRide(rideId, username, unicorn).then(() => {
+        // You can use the callback function to provide a return value from your Node.js
+        // Lambda functions. The first parameter is used for failed invocations. The
+        // second parameter specifies the result data of the invocation.
+
+        // Because this Lambda function is called by an API Gateway proxy integration
+        // the result object must use the following structure.
+        callback(null, {
+            statusCode: 201,
+            body: JSON.stringify({
+                RideId: rideId,
+                Unicorn: unicorn,
+                Eta: '30 seconds',
+                Rider: username,
+            }),
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+            },
+        });
+    }).catch((err) => {
+        console.error(err);
+
+        // If there is an error during processing, catch it and return
+        // from the Lambda function successfully. Specify a 500 HTTP status
+        // code and provide an error message in the body. This will provide a
+        // more meaningful error response to the end client.
+        errorResponse(err.message, context.awsRequestId, callback)
+    });
+};
+
+// This is where you would implement logic to find the optimal unicorn for
+// this ride (possibly invoking another Lambda function as a microservice.)
+// For simplicity, we'll just pick a unicorn at random.
+function findUnicorn(pickupLocation) {
+    console.log('Finding unicorn for ', pickupLocation.Latitude, ', ', pickupLocation.Longitude);
+    return fleet[Math.floor(Math.random() * fleet.length)];
+}
+
+function recordRide(rideId, username, unicorn) {
+    return ddb.put({
+        TableName: 'Rides',
+        Item: {
+            RideId: rideId,
+            User: username,
+            Unicorn: unicorn,
+            RequestTime: new Date().toISOString(),
+        },
+    }).promise();
+}
+
+function toUrlString(buffer) {
+    return buffer.toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+}
+
+function errorResponse(errorMessage, awsRequestId, callback) {
+  callback(null, {
+    statusCode: 500,
+    body: JSON.stringify({
+      Error: errorMessage,
+      Reference: awsRequestId,
+    }),
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+```
+
+#### 4. Deploy the infrastructure
+
+1. Initialize the project using the following command in the root of the project:
 
 ```bash
 terraform init
 ```
 
-4. See the plan using the following command:
+2. See the plan of the infrastructure using the following command:
 
 ```bash
 terraform plan
 ```
 
-5. Deploy the resources using the following command:
+3. Deploy the infrastructure using the following command:
 
 ```bash
 terraform apply
 ```
 
-6. Set up the repository locally using the following commands:
+In this part, you may see an error related to the `email sender`. To fix this, simply go to your spam folder and confirm the email and deploy again.
+
+4. See the outputs of the infrastructure using the following command:
+
+```bash
+terraform output
+```
+
+5. Set up the repository locally using the following commands:
 
 ```bash
 git config --global credential.helper '!aws codecommit credential-helper $@'
@@ -921,6 +1320,8 @@ git config --global credential.UseHttpPath true
 ```
 
 7. Clone the repository using the following command:
+
+You can see the output of the `code_commit_repository_url` in the previous step or in the **AWS Console**.
 
 ```bash
 git clone <the output of the CodeCommitRepoUrl generated in previous steps>
@@ -945,17 +1346,12 @@ git push
 
 ![amplify-result](/content/projects/serverless-app/amplify-result.png)
 
-#### 2. User Management
+> You can follow the steps in the previous section to see the result of the project.
 
-When users visit our website they will first register a new user account. We are going to use **Amazon Cognito** to manage user registration and authentication for our application.
+11. Delete the infrastructure using the following command:
 
-When users have a confirmed account they will be able to log in and by doing so they will receive a JSON Web Token (JWT) which they can use to access the backend API.
-
-![Cognito](/content/projects/serverless-app/two.png)
-
-1. Create a new folder called `user-pool` and create a file called `main.tf` inside the `user-pool` folder with the following code:
-
-```hcl
+```bash
+terraform destroy
 ```
 
 ## Recommendation
@@ -963,6 +1359,10 @@ When users have a confirmed account they will be able to log in and by doing so 
 Remember that the final result of the project is directly related to the **AWS Serverless Web Applications Workshop**. I recommend that you follow the workshop to understand the project and also to learn more about AWS services. Also, I recommend that if any errors occur in the actual `production code`(not the code related to the infrastructure), you forget about it and **make sure the infrastructure is working correctly**.
 
 ![Workshop error output](/content/projects/serverless-app/error.png)
+
+You can test your lambda directly in the AWS Console to check if the code is working correctly. This is an image of the result of my infrastructure:
+
+![result](/content/projects/serverless-app/api.png)
 
 ## Conclusion
 
