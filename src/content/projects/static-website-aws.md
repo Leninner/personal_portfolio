@@ -1354,6 +1354,8 @@ git push
 terraform destroy
 ```
 
+> You can see the entire code of this project in my [GitHub](https://github.com/Leninner/cloud/tree/main/aws/terraform/serverless-app)
+
 ## Recommendation
 
 Remember that the final result of the project is directly related to the **AWS Serverless Web Applications Workshop**. I recommend that you follow the workshop to understand the project and also to learn more about AWS services. Also, I recommend that if any errors occur in the actual `production code`(not the code related to the infrastructure), you forget about it and **make sure the infrastructure is working correctly**.
