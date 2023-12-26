@@ -18,6 +18,8 @@ image: "/blog-placeholder-4.jpg"
     - [4. RESTful API](#4-restful-api)
     - [5. Clean Up](#5-clean-up)
   - [Using Terraform](#using-terraform)
+    - [1. Static Web Hosting](#1-static-web-hosting-1)
+    - [2. User Management](#2-user-management-1)
 - [Recommendation](#recommendation)
 - [Conclusion](#conclusion)
 
@@ -737,6 +739,224 @@ cdk destroy CodeCommitStack
 ### Using Terraform
 
 Terraform is an open-source `infrastructure as code` software tool created by **HashiCorp**. It enables users to define and provision a datacenter infrastructure using a high-level configuration language known as Hashicorp Configuration Language (HCL), or optionally JSON.
+
+#### 1. Static Web Hosting
+
+**AWS Amplify** `hosts static web resources` including HTML, CSS, JavaScript, and image files which are loaded in the user's browser. We are going to configure AWS Amplify to host the static resources for your web application with **continuous deployment** built in.
+
+![Amplify](/content/projects/serverless-app/one.png)
+
+1. Create a new folder called `serverless-app` and create a folder inside called `code-commit`. Create a file called `main.tf` inside the `code-commit` folder with the following code:
+
+```hcl
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.31.0"
+    }
+  }
+
+  required_version = ">= 1.6.6"
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+```
+
+In the previous code we are defining the `aws` provider and the `region` where we are going to deploy the resources.
+
+1. Create a `resources.tf` file to define the resources we are going to use:
+
+```hcl
+resource "aws_codecommit_repository" "wildrydes_site" {
+  repository_name = "wildrydes_site"
+  description     = "Wild Rydes sample application for Serverless Stack"
+  default_branch  = "main"
+}
+
+resource "aws_iam_user" "user_for_codecommit" {
+  name          = "user_for_codecommit"
+  path          = "/"
+  force_destroy = true
+}
+
+resource "aws_iam_user_login_profile" "user_for_codecommit_password" {
+  user            = aws_iam_user.user_for_codecommit.name
+  password_length = 8
+}
+
+resource "aws_iam_user_policy_attachment" "user_for_codecommit_policy" {
+  user       = aws_iam_user.user_for_codecommit.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSCodeCommitPowerUser"
+}
+
+resource "aws_iam_policy" "codecommit_user_policy" {
+  name        = "codecommit_user_policy"
+  path        = "/"
+  description = "IAM policy to grant pull and push access to CodeCommit repositories"
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Action" : [
+          "codecommit:GitPull",
+          "codecommit:GitPush"
+        ],
+        "Resource" : [
+          aws_codecommit_repository.wildrydes_site.arn
+        ],
+        "Effect" : "Allow"
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role" "amplify_service_role_for_codecommit" {
+  name        = "amplify_service_role_for_codecommit"
+  description = "amplify service role for codecommit"
+  assume_role_policy = jsonencode(
+    {
+      "Version" : "2012-10-17",
+      "Statement" : [
+        {
+          "Action" : [
+            "sts:AssumeRole"
+          ],
+          "Effect" : "Allow",
+          "Principal" : {
+            "Service" : [
+              "amplify.amazonaws.com"
+            ]
+          }
+        },
+      ]
+    }
+  )
+  inline_policy {
+    name = "amplify_service_role_for_codecommit_inline_policy"
+    policy = jsonencode({
+      "Version" : "2012-10-17",
+      "Statement" : [
+        {
+          "Action" : [
+            "codecommit:GitPull",
+          ],
+          "Resource" : [
+            aws_codecommit_repository.wildrydes_site.arn
+          ],
+          "Effect" : "Allow"
+        },
+      ]
+    })
+  }
+}
+
+resource "aws_amplify_app" "wildrydes_site" {
+  name                 = "wildrydes_site"
+  repository           = aws_codecommit_repository.wildrydes_site.clone_url_http
+  iam_service_role_arn = aws_iam_role.amplify_service_role_for_codecommit.arn
+}
+
+resource "aws_amplify_branch" "main" {
+  branch_name = "main"
+  app_id      = aws_amplify_app.wildrydes_site.id
+}
+
+resource "aws_ses_email_identity" "email_sender" {
+  email = "<your email>"
+}
+```
+
+You must verify the email address you are going to use in the next steps seeing the email in your inbox or seing your spam folder. Also, you can see the [CodeCommit] approach to understand the resources.
+
+2. Create a `outputs.tf` file to define the outputs we are going to use:
+
+```hcl
+output "amplify_app_id" {
+  value = aws_amplify_app.wildrydes_site.id
+}
+
+output "amplify_app_url" {
+  value = "https://main.${aws_amplify_app.wildrydes_site.id}.amplifyapp.com"
+}
+
+output "code_commit_repository_url" {
+  value = aws_codecommit_repository.wildrydes_site.clone_url_http
+}
+
+output "iam_user_password" {
+  value = aws_iam_user_login_profile.user_for_codecommit_password.password
+}
+
+output "username" {
+  value = aws_iam_user.user_for_codecommit.name
+}
+```
+
+3. Initialize the project using the following command:
+
+```bash
+terraform init
+```
+
+4. See the plan using the following command:
+
+```bash
+terraform plan
+```
+
+5. Deploy the resources using the following command:
+
+```bash
+terraform apply
+```
+
+6. Set up the repository locally using the following commands:
+
+```bash
+git config --global credential.helper '!aws codecommit credential-helper $@'
+git config --global credential.UseHttpPath true
+```
+
+7. Clone the repository using the following command:
+
+```bash
+git clone <the output of the CodeCommitRepoUrl generated in previous steps>
+```
+
+8. Copy the assets from a public S3 bucket using the following command:
+
+```bash
+cd wildrydes-site
+aws s3 cp s3://wildrydes-us-east-1/WebApplication/1_StaticWebHosting/website ./ --recursive
+```
+
+9. Add the files to the repository using the following commands:
+
+```bash
+git add .
+git commit -m "Add static website assets"
+git push
+```
+
+10. See the `amplify_app_url` output and check the website in `https://main.<amplify_app_id>.amplifyapp.com`
+
+![amplify-result](/content/projects/serverless-app/amplify-result.png)
+
+#### 2. User Management
+
+When users visit our website they will first register a new user account. We are going to use **Amazon Cognito** to manage user registration and authentication for our application.
+
+When users have a confirmed account they will be able to log in and by doing so they will receive a JSON Web Token (JWT) which they can use to access the backend API.
+
+![Cognito](/content/projects/serverless-app/two.png)
+
+1. Create a new folder called `user-pool` and create a file called `main.tf` inside the `user-pool` folder with the following code:
+
+```hcl
+```
 
 ## Recommendation
 
