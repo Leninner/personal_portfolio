@@ -7,6 +7,36 @@ heroImage: "/blog-placeholder-4.jpg"
 tags: ["cloud", "infrastructure", "terraform"]
 ---
 
+- [What is Terraform?](#what-is-terraform)
+- [What is infrastructure as code?](#what-is-infrastructure-as-code)
+  - [Demo](#demo)
+- [Build infrastructure on AWS](#build-infrastructure-on-aws)
+- [Common Patterns](#common-patterns)
+- [Terraform Architecture](#terraform-architecture)
+- [Variable types](#variable-types)
+  - [Input variables](#input-variables)
+  - [Local variables](#local-variables)
+  - [Output variables](#output-variables)
+  - [Setting input variables](#setting-input-variables)
+- [Project organization and modules](#project-organization-and-modules)
+- [Managing multiple environments](#managing-multiple-environments)
+  - [Workspaces](#workspaces)
+  - [File structure](#file-structure)
+- [Terraform languaje](#terraform-languaje)
+  - [Example](#example)
+  - [Files and directories](#files-and-directories)
+    - [Directories](#directories)
+    - [Root module](#root-module)
+    - [Override Files](#override-files)
+  - [Sintax](#sintax)
+    - [Configuration sintax](#configuration-sintax)
+      - [Arguments and blocks](#arguments-and-blocks)
+        - [Argument](#argument)
+        - [Block](#block)
+      - [Identifiers](#identifiers)
+      - [Comments](#comments)
+
+
 ## What is Terraform?
 
 Terraform is a tool for building, changing and versioning infrastructure safely and efficiently. Is a infrastructure as code tool.
