@@ -14,6 +14,7 @@ image: "/blog-placeholder-2.jpg"
 - [Architecture](#architecture)
   - [Requirements](#requirements)
 - [Implementation](#implementation)
+  - [Set up repository](#set-up-repository)
   - [Using Terraform](#using-terraform)
   - [Using CDK](#using-cdk)
 - [Conclusion](#conclusion)
@@ -61,7 +62,13 @@ In this project, we are going to use **nginx** as our load balancer and **apache
 
 ## Implementation
 
-For this project I will be using two approaches:
+### Set up repository
+
+First, we need to create a repository to store our code. You can create a new repository or use an existing one. I will be using an existing repository called **go-api-gh-actions**.
+
+You can get the code
+
+For this project we are going to use two approaches:
 
 - [Using Terraform](#using-terraform)
 - [Using AWS Cloud Development Kit](#using-cdk)
