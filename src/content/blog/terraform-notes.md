@@ -22,6 +22,13 @@ tags: ["cloud", "infrastructure", "terraform"]
 - [Managing multiple environments](#managing-multiple-environments)
   - [Workspaces](#workspaces)
   - [File structure](#file-structure)
+- [Testing Terraform Code](#testing-terraform-code)
+  - [Static checks](#static-checks)
+  - [External](#external)
+- [Development Workflow](#development-workflow)
+  - [Additional Tools](#additional-tools)
+  - [Potential Gotchas](#potential-gotchas)
+  - [Github actions automation for Terraform](#github-actions-automation-for-terraform)
 - [Terraform languaje](#terraform-languaje)
   - [Example](#example)
   - [Files and directories](#files-and-directories)
@@ -444,6 +451,12 @@ To see the workspaces:
 terraform workspace list
 ```
 
+To change the workspace:
+
+```bash
+terraform workspace select production
+```
+
 To use the workspace in terraform files:
 
 ```hcl
@@ -465,6 +478,216 @@ Directory layout provides separation, modules provide reuse
 **Cons**
 - Multiple **terraform apply** required to provision environments
 - Mode code duplication, but can be minimized with modules
+
+## Testing Terraform Code
+
+We can talk about `Code Rot` that is a process where the quality of your code deteriorates over time. For example:
+
+- Out of band changes
+- Unpinned versions
+- Decrecated dependencies
+- Unapplied changes
+
+To avois these things we can `Test` our code.
+
+### Static checks
+
+Built-in:
+
+- terraform fmt
+- terraform validate
+- terraform plan
+- custom validatio rules
+
+### External
+
+- tflint
+- checkcov, tfsec, terrascan, terraform-compliance, snyk
+- Terraform sentinal (enterprise only)
+
+- Example of an Automated Testing Pipeline with bash
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+# change to the directory of this script
+cd "$(dirname "$0")"
+
+# create the resources
+terraform init
+terraform apply -auto-approve
+
+# wait while the instance boots up
+# (could also usea provisioner in the TF config to do this)
+sleep 60
+
+# Query the output, extract the IP and make a request
+terraform output -json |\
+jq -r '.public_ip.value' |\
+xargs -I {} curl http://{}/8080 -m 10
+
+# If request suceeds, destroy the resources
+terraform destroy -auto-approve
+```
+
+- Example of an Automated Testing Pipeline with Terratest
+
+```go
+package test
+
+import (
+	"crypto/tls"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/gruntwork-io/terratest/modules/http-helper"
+	"github.com/gruntwork-io/terratest/modules/terraform"
+)
+
+func TestTerraformHelloWorldExample(t *testing.T) {
+	// retryable errors in terraform testing.
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../../examples/hello-world",
+	})
+
+	defer terraform.Destroy(t, terraformOptions)
+
+	terraform.InitAndApply(t, terraformOptions)
+
+	instanceURL := terraform.Output(t, terraformOptions, "url")
+	tlsConfig := tls.Config{}
+	maxRetries := 30
+	timeBetweenRetries := 10 * time.Second
+
+	http_helper.HttpGetWithRetryWithCustomValidation(
+		t, instanceURL, &tlsConfig, maxRetries, timeBetweenRetries, validate,
+	)
+
+}
+
+func validate(status int, body string) bool {
+	fmt.Println(body)
+	return status == 200
+}
+```
+
+## Development Workflow
+
+General workflow:
+
+1. Write/update code
+2. Run changes locally (for development environment)
+3. Create a pull request
+4. Run tests via Continuous Integration (CI)
+5. Deploy to staging via CD (on **merge to main**)
+6. Deploy to production via CD (on **release**)
+
+### Additional Tools
+
+- **Terragrunt**: 
+  - Minimizes code repetition
+  - Enables multi-account separation (improved isolation/security)
+- **Cloud Nuke**
+  - Easy cleanup of cloud resources
+- **Makefiles**
+  - Prevent human error
+
+### Potential Gotchas
+
+- Name changes when refactoring
+- Sentitive data in Terraform state files
+- Cloud timeouts
+- Naming conflicts
+- Forgetting to destroy test-infra
+- Uni-directional version upgrades
+- Multiple ways to accomplish same configuration
+- Some params are inmutable
+- Out of band changes
+
+### Github actions automation for Terraform
+
+```yaml
+name: "Terraform"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  terraform:
+    name: "Terraform"
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+      
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        if: github.event_name == 'pull_request'
+        run: terraform plan -no-color -input=false
+        continue-on-error: true
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`terraform\n
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
+```
 
 ## Terraform languaje
 
