@@ -9,6 +9,8 @@ image: "/blog-placeholder-2.jpg"
 
 - [Introduction](#introduction)
   - [What is CI/CD?](#what-is-cicd)
+  - [What is a CI/CD Pipeline?](#what-is-a-cicd-pipeline)
+  - [What is AWS EC2?](#what-is-aws-ec2)
 - [Architecture](#architecture)
   - [Requirements](#requirements)
 - [Implementation](#implementation)
@@ -30,6 +32,16 @@ Workflows are custom automated processes that you can set up in your repository 
 - **Continuous Delivery** is the practice of keeping your codebase deployable at any point. Beyond making sure your application passes automated tests, continuous delivery involves ensuring that your application `can be deployed to any` environment on demand. Is an approach to software engineering based on producing software in short cycles.
 - **Continuous Deployment** is the practice of automatically `deploying new code into production`. With continuous deployment, every change that passes all stages of your production pipeline is released to your customers. There's no human intervention, and only a failed test will prevent a new change to be deployed to production.
 
+### What is a CI/CD Pipeline?
+
+A CI/CD pipeline automates your software delivery process. The pipeline builds code, runs tests (CI), and safely deploys a new version of the application (CD). Automated pipelines remove manual errors, provide standardized feedback loops to developers, and enable fast product iterations.
+
+### What is AWS EC2?
+
+**AWS** stands for Amazon Web Services. It is a cloud computing platform that provides a wide range of services like compute power, database storage, content delivery, and other functionality to help businesses scale and grow.
+
+**Amazon Elastic Compute Cloud (Amazon EC2)** is a web service that provides secure, resizable **compute capacity in the cloud**. It is designed to make web-scale cloud computing easier for developers. Amazon EC2’s simple web service interface allows you to obtain and configure capacity with minimal friction. It provides you with complete control of your computing resources and lets you run on Amazon’s proven computing environment.
+
 ## Architecture
 
 ![Architecture](/content/projects/load-balancing-aws/architecture.png)
@@ -40,13 +52,12 @@ In this project, we are going to use **nginx** as our load balancer and **apache
 
 ### Requirements
 
+- An **Github Account** and a **repository** to store the code
 - An AWS account and AWS CLI configured on your computer
 - Some knowledge about AWS services like EC2, VPC, IAM, etc.
 - A basic knowledge of Linux commands
-- **CDK CLI** and **Terraform** installed on your computer
+- A basic knowledge of Docker
 - An IDE or text editor, I will be using **Visual Studio Code**
-
-> Remeber that if is the first time you are running the stacks in the region, you have to run the `cdk bootstrap` command to prepare the environment for the stacks.
 
 ## Implementation
 
