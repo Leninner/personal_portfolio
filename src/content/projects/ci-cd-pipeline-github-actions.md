@@ -15,8 +15,6 @@ image: "/blog-placeholder-2.jpg"
   - [Requirements](#requirements)
 - [Implementation](#implementation)
   - [Set up repository](#set-up-repository)
-  - [Using Terraform](#using-terraform)
-  - [Using CDK](#using-cdk)
 - [Conclusion](#conclusion)
 
 ## Introduction
@@ -67,17 +65,6 @@ In this project, we are going to use **nginx** as our load balancer and **apache
 First, we need to create a repository to store our code. You can create a new repository or use an existing one. I will be using an existing repository called **go-api-gh-actions**.
 
 You can get the code
-
-For this project we are going to use two approaches:
-
-- [Using Terraform](#using-terraform)
-- [Using AWS Cloud Development Kit](#using-cdk)
-
-These two approaches are very similar, CDK is proposed by AWS and Terraform is a third party tool. Both of them are great tools to create **infrastructure as code.**
-
-### Using Terraform
-
-### Using CDK
 
 ## Conclusion
 
