@@ -13,6 +13,11 @@ tags: ["configuration-management", "ansible", "provisioning", "cloud"]
   - [Installation](#installation)
 - [System inventory](#system-inventory)
   - [Creating an inventory file](#creating-an-inventory-file)
+  - [Using group variables in an Ansible inventory](#using-group-variables-in-an-ansible-inventory)
+- [What are ad-hoc commands?](#what-are-ad-hoc-commands)
+  - [Create a linux user](#create-a-linux-user)
+  - [Install nginx](#install-nginx)
+- [What are playbooks?](#what-are-playbooks)
 
 ## What is Ansible?
 
@@ -91,3 +96,94 @@ Tell to ansible which inventory file we want to use
 ```bash
 ansible -i inventory.init -u leninner -m ping all
 ```
+
+If all goes well, we should see something like this:
+
+```bash
+x.x.x.x | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+x.x.x.x | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+x.x.x.x | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+```
+
+### Using group variables in an Ansible inventory
+
+```bash
+# inventory.init
+
+## define groups and IPs
+[webservers]
+x.x.x.x
+x.x.x.x
+
+[databases]
+x.x.x.x
+
+[all:vars]
+ansible_user=leninner
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+
+[webservers:vars]
+ansible_python_interpreter=/usr/bin/python3
+
+[databases:vars]
+ansible_python_interpreter=/usr/bin/python3
+```
+
+## What are ad-hoc commands?
+
+An ad-hoc command is a single Ansible task to perform quickly, but don't want to save for later. It is a command that you run from the command line to perform a quick task.
+
+Are:
+
+- One-off jobs and runs
+- Pulling information
+- Fun, but limited
+
+### Create a linux user
+
+```bash
+ansible -i inventory.ini -u root -m user -a "name=test state=present" all
+```
+
+You should see something like this:
+
+```bash
+x.x.x.x | CHANGED => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": true,
+    "comment": "",
+    "create_home": true,
+    "group": 1000,
+    "home": "/home/test",
+    "name": "test",
+    "shell": "/bin/bash",
+    "state": "present",
+    "system": false,
+    "uid": 1000
+}
+```
+
+### Install nginx
+
+```bash
+# To install
+ansible -i inventory.ini -u root -m package -a "name=nginx state=present" webservers
+
+# To uninstall
+ansible -i inventory.ini -u root -m package -a "name=nginx state=absent" webservers
+```
+
+## What are playbooks?
+
+`Playbooks are Ansible's configuration, deployment, and onchestration languaje`. They can describe a policy you want  your remote systems to enforce, or a set of steps in a general IT process.
