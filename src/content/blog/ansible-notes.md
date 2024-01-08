@@ -18,6 +18,7 @@ tags: ["configuration-management", "ansible", "provisioning", "cloud"]
   - [Create a linux user](#create-a-linux-user)
   - [Install nginx](#install-nginx)
 - [What are playbooks?](#what-are-playbooks)
+- [What are roles?](#what-are-roles)
 
 ## What is Ansible?
 
@@ -187,3 +188,61 @@ ansible -i inventory.ini -u root -m package -a "name=nginx state=absent" webserv
 ## What are playbooks?
 
 `Playbooks are Ansible's configuration, deployment, and onchestration languaje`. They can describe a policy you want  your remote systems to enforce, or a set of steps in a general IT process.
+
+Playbook is the core component of Ansible. It is a YAML file that describes the desired state of the system. It is a file that contains a list of tasks that we want to execute on a particular remote server.
+
+With playbook:
+- The real fun begins
+- Very powerful and flexible
+- Can be nested
+- A collection of **plays**
+  - Is a collection of **tasks**
+  - which execute **modules**
+
+Let's create a playbook:
+
+- A **playbook** document contains `plays`
+
+```yaml
+# PATH: master.yaml
+
+# first play
+- name: Configure WebServers
+  hosts: webservers
+  become: yes
+  tasks: # this is a list of tasks
+    - name: Create a non-root user
+      user: # this is a module
+        name: leninner
+        state: present
+
+    - name: Install nginx
+      package: # this is a module
+        name: nginx
+        state: present
+
+# second play
+- name: Configure Databases
+  hosts: databases
+  become: yes
+  tasks:
+    - name: Install MySQL Server
+      package:
+        name: mysql-server
+        state: present
+```
+
+To run the playbook:
+
+```bash
+ansible-playbook -i inventory.ini master.yaml -u root
+```
+
+## What are roles?
+
+Roles are ways of automatically loading **certain vars_files**, tasks, and handlers based on a known file structure. 
+
+Grouping content by roles also allows easy sharing of roles with other users.
+
+- Are repeatable and reusable unit of code
+- Used for managing sets of related resources
