@@ -246,3 +246,39 @@ Grouping content by roles also allows easy sharing of roles with other users.
 
 - Are repeatable and reusable unit of code
 - Used for managing sets of related resources
+
+We are going to create the following structure:
+
+```bash
+mkdir -p roles/users/tasks roles/users/defaults
+```
+
+Inside the `roles/users/tasks` folder, we are going to create a file called `main.yaml` and inside this file we are going to write the following code:
+
+```yaml
+# PATH: roles/users/tasks/main.yaml
+---
+- name: Create or delete user accounts
+  loop: "{{ users_list }}"
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    state: "{{ item.state }}"
+
+```
+
+Inside the `roles/users/defaults` folder, we are going to create a file called `main.yaml` and inside this file we are going to write the following code:
+
+```yaml
+# PATH: roles/users/defaults/main.yaml
+---
+users_list:
+  - username: leninsin
+    state: absent
+
+  - username: stalin
+    state: absent
+
+  - username: pepe
+    state: absent
+
+```
