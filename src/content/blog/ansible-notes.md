@@ -19,6 +19,9 @@ tags: ["configuration-management", "ansible", "provisioning", "cloud"]
   - [Install nginx](#install-nginx)
 - [What are playbooks?](#what-are-playbooks)
 - [What are roles?](#what-are-roles)
+  - [Variables and conditions](#variables-and-conditions)
+  - [Loops](#loops)
+- [What are tags?](#what-are-tags)
 
 ## What is Ansible?
 
@@ -281,4 +284,153 @@ users_list:
   - username: pepe
     state: absent
 
+```
+
+### Variables and conditions
+
+- Variables
+
+```yaml
+# play
+- name: Using vargs
+  hosts: all
+  gather_facts: false
+  vars:
+    hello: Hello World # this is a variable
+    number_list: [1, 2, 3, 4, 5] # this is a list
+    string_list: ['hello', 'world'] # this is a list
+    another_number_list: # this is a list
+      - 1
+      - 2
+      - 3
+    number_map: # this is a map
+      one: 1
+      two: 2
+      a_map_inside:
+        one: 1
+        two: 2
+    list_of_maps: # this is a list of maps
+      - name: lenin
+        age: 24
+      - name: stalin
+        age: 25
+    map_of_lists: # this is a map of lists
+      names: ['lenin', 'stalin']
+      ages:
+        - 24
+        - 25
+  tasks:
+    - name: Print hello
+      debug:
+        msg: "Hello {{ number_map.a_map_inside.one }}" # using the variable
+    - name: Print list of maps
+      debug:
+        msg: "{{ list_of_maps[0].name }}"
+    - name: Print map of lists
+      debug:
+        msg: "{{ map_of_lists.names[0] }}"
+```
+
+- Conditions
+
+```yaml
+# play
+- name: Using conditions
+  hosts: all
+  gather_facts: false
+  vars:
+    number: 10
+    another_number: 20
+  tasks:
+    - name: Print number
+      debug:
+        msg: "The number is {{ number }}"
+      when: number > 5 and number < 15
+    
+    - name: Print another number
+      debug:
+        msg: "The another number is {{ another_number }}"
+      when: 
+        - another_number > 5
+        - or # this is necessary for `or` condition, if you have `and` condition you don't need this
+        - another_number < 15
+```
+
+
+### Loops
+
+```yaml
+# play
+- name: Using loops
+  hosts: localhost
+  vars:
+    number_list: [1, 2, 3, 4, 5] # this is a list
+    map_list: # this is a list of maps
+      name: lenin
+      age: 24
+  tasks:
+    - name: Print hello
+      ansible.builtin.debug:
+        msg: "Hello {{ item }}" # using the item of the list
+      loop: "{{ number_list }}" # looping through the list
+
+    - name: Iterating over a map
+      ansible.builtin.debug:
+        msg: "Hello {{ item.key }} and {{ item.value }}" # using the item of the list
+      loop: "{{ map_list | dict2items }}" # looping through the map
+
+    - name: Using a loop condition
+      ansible.builtin.debug:
+        msg: "Hello {{ item }}"
+      loop: "{{ number_list }}"
+      when: item > 3
+```
+
+## What are tags?
+
+Are:
+
+- Great at the `task` level
+- Can be used to skip certain tasks or only execute certain task
+- Great for speeding up development times during experimentation
+- Speeding up execution, especially in CI/CD pipelines
+
+```yaml
+# play
+- name: Using tags
+  hosts: all
+  gather_facts: false
+  vars:
+    number: 10
+    another_number: 20
+  tasks:
+    - name: Print number
+      debug:
+        msg: "The number is {{ number }}"
+      when: number > 5 and number < 15
+      tags: # this is a tag
+        - number
+        - number2
+
+    - name: Print another number
+      debug:
+        msg: "The another number is {{ another_number }}"
+      when: 
+        - another_number > 5
+        - or # this is necessary for `or` condition, if you have `and` condition you don't need this
+        - another_number < 15
+      tags: # this is a tag
+        - another_number
+```
+
+To run the playbook with tags:
+
+```bash
+ansible-playbook -i inventory.ini master.yaml -u root --tags "number, number2"
+```
+
+To run the playbook without tags:
+
+```bash
+ansible-playbook -i inventory.ini master.yaml -u root --skip-tags "number, number2"
 ```
