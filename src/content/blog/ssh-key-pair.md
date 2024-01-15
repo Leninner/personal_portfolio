@@ -14,6 +14,8 @@ tags: ["ssh", "key-pair", "ssh-keygen"]
 
 SSH is a **protocol** that allows us to connect to a remote machine and execute commands on it. In order to connect to a remote machine, we need to have a ssh key pair. This key pair is composed by a **public key and a private key**. The public key is stored in the `remote machine` and the private key is stored in `our local machine`. In this post, we will see how to generate a ssh key pair.
 
+> You can read more about ssh in the [official documentation](https://www.ssh.com/ssh/protocol/).
+
 ## Generating a ssh key pair
 
 In order to generate a ssh key pair, we will use the `ssh-keygen` command. This command will generate a ssh key pair in the `~/.ssh` directory. The `~/.ssh` directory is the default directory where the ssh keys are stored.
