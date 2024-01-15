@@ -7,12 +7,8 @@ heroImage: "/blog-placeholder-4.jpg"
 tags: ["ssh", "key-pair", "ssh-keygen"]
 ---
 
-- [What is Ansible?](#what-is-ansible)
-  - [Use cases](#use-cases)
-  - [What problem does Ansible solve?](#what-problem-does-ansible-solve)
-  - [Installation](#installation)
-- [System inventory](#system-inventory)
-  - [Creating an inventory file](#creating-an-inventory-file)
+- [What is SSH?](#what-is-ssh)
+- [Generating a ssh key pair](#generating-a-ssh-key-pair)
 
 ## What is SSH?
 
