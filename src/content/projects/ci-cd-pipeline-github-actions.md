@@ -122,10 +122,28 @@ jobs:
         run: go build -v
 
       - name: Test
-        run: go test -v ./...
-
-  
+        run: go test -v ./...  
 ```
+
+5. Commit and push the changes to your remote repository.
+
+```bash
+git add .
+git commit -m "Add ci pipeline file"
+git push origin feature/ci-pipeline
+```
+
+6. Now, we can open a pull request to merge the **feature/ci-pipeline** branch to the **develop** branch.
+
+![Open PR](/content/projects/ci-cd-pipeline-gh-actions/open-pr.png)
+
+7. Select the **develop** branch as the base branch and the **feature/ci-pipeline** branch as the compare branch. Click on **Create pull request**.
+
+![Opening pr](/content/projects/ci-cd-pipeline-gh-actions/opening-pr.png)
+
+8. Now, we can go to the **Actions** tab and see the status of our pipeline.
+
+![CI status](/content/projects/ci-cd-pipeline-gh-actions/ci-status.png)
 
 ## Conclusion
 
