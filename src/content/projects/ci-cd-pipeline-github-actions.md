@@ -256,6 +256,7 @@ jobs:
 4. Now, we need to have an EC2 instance running in AWS where we can deploy our code. We are going to use **terraform** to create the infrastructure in AWS.
    1. Create a new folder called **terraform** in the root of the repository.
    2. Create and open a **main.tf** file and add the following code.
+    This configuration will create an EC2 instance with a security group that allows SSH and HTTP traffic.
 
     ```hcl
     terraform {
@@ -324,6 +325,7 @@ jobs:
     ```
 
    3. Create and open a **variables.tf** file and add the following code.
+    This configuration contains the variables that we are going to use in our terraform configuration.
 
     ```hcl
     variable "aws_region" {
