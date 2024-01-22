@@ -190,70 +190,7 @@ Now, we are going to create the second part of our architecture, the CD pipeline
 
 This pipeline will be triggered when we merge a pull request to the main branch. If the code builds successfully and the tests pass, the code will be deployed to an AWS EC2 instance.
 
-1. Go to the local repository, pull all the changes from the remote repository from **develop** and we will work in this branch.
-
-```bash
-git checkout develop
-git pull origin develop
-```
-
-2. Create a file called `cd-pipeline.yml` in the `.github/workflows` folder. This file will contain the configuration of our CD pipeline.
-
-```bash
-touch .github/workflows/cd-pipeline.yml
-```
-
-3. Open the `cd-pipeline.yml` file and add the following code.
-
-In this file we are defining two jobs:
-
-- **Build**: This job will build our code.
-- **Deploy**: This job will deploy our code to an AWS EC2 instance.
-
-Keep in mind that every job depends on the previous job. If the previous job fails, the next job will not run.
-
-```yaml
-name: Continuous Delivery for Go simple api
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.16
-
-      - name: Build Go api
-        run: go build -o go-api-rest-gh-actions
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.16
-
-      - name: Deploy Go api
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.PRIVATE_KEY }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} "sudo systemctl stop go-api-rest-gh-actions"
-          scp -o StrictHostKeyChecking=no -i ${{ secrets.PRIVATE_KEY }} go-api-rest-gh-actions ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/${{ secrets.USERNAME }}/go-api-rest-gh-actions
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.PRIVATE_KEY }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} "sudo systemctl start go-api-rest-gh-actions"
-```
-
-4. Now, we need to have an EC2 instance running in AWS where we can deploy our code. We are going to use **terraform** to create the infrastructure in AWS.
+We need to have an EC2 instance running in AWS where we can deploy our code. We are going to use **terraform** to create the infrastructure in AWS.
    1. Create a new folder called **terraform** in the root of the repository.
    2. Create and open a **main.tf** file and add the following code.
     This configuration will create an EC2 instance with a security group that allows SSH and HTTP traffic.
@@ -356,6 +293,69 @@ jobs:
     }
     ```
 
+
+1. Go to the local repository, pull all the changes from the remote repository from **develop** and we will work in this branch.
+
+```bash
+git checkout develop
+git pull origin develop
+```
+
+2. Create a file called `cd-pipeline.yml` in the `.github/workflows` folder. This file will contain the configuration of our CD pipeline.
+
+```bash
+touch .github/workflows/cd-pipeline.yml
+```
+
+3. Open the `cd-pipeline.yml` file and add the following code.
+
+In this file we are defining two jobs:
+
+- **Build**: This job will build our code.
+- **Deploy**: This job will deploy our code to an AWS EC2 instance.
+
+Keep in mind that every job depends on the previous job. If the previous job fails, the next job will not run.
+
+```yaml
+name: Continuous Delivery for Go simple api
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.16
+
+      - name: Build Go api
+        run: go build -o go-api-rest-gh-actions
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.16
+
+      - name: Deploy Go api
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.PRIVATE_KEY }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} "sudo systemctl stop go-api-rest-gh-actions"
+          scp -o StrictHostKeyChecking=no -i ${{ secrets.PRIVATE_KEY }} go-api-rest-gh-actions ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/${{ secrets.USERNAME }}/go-api-rest-gh-actions
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.PRIVATE_KEY }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} "sudo systemctl start go-api-rest-gh-actions"
+```
 
 ## Conclusion
 
