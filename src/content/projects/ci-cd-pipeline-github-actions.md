@@ -16,6 +16,7 @@ image: "/blog-placeholder-2.jpg"
 - [Implementation](#implementation)
   - [Part 1: Create a Continuous Integration (CI) Pipeline](#part-1-create-a-continuous-integration-ci-pipeline)
   - [Part 2: Create a Continuous Delivery (CD) Pipeline](#part-2-create-a-continuous-delivery-cd-pipeline)
+  - [Part 3: Define the secrets](#part-3-define-the-secrets)
 - [Conclusion](#conclusion)
 
 ## Introduction
@@ -44,9 +45,9 @@ A CI/CD pipeline automates your software delivery process. The pipeline builds c
 
 ## Architecture
 
-![Architecture](/content/projects/load-balancing-aws/architecture.png)
+![Architecture](/content/projects/ci-cd-pipeline-gh-actions/architecture.png)
 
-In the above architecture, we have a Golang API that is in a Giyhub repository. We are going to create a CI/CD pipeline with Github Actions to build and deploy the API in AWS EC2 instances. We are going to use **terraform** to create the infrastructure in AWS.
+In the above architecture, we have a Golang API that is in a Github repository. We are going to create a CI/CD pipeline with Github Actions to build and deploy the API in AWS EC2 instances. We are going to use **terraform** to create the infrastructure in AWS.
 
 ### Requirements
 
@@ -188,7 +189,7 @@ And as you can see, the pipeline is green and the pull request can be merged.
 
 Now, we are going to create the second part of our architecture, the CD pipeline. The CD pipeline will deploy the code to an AWS EC2 instance.
 
-This pipeline will be triggered when we merge a pull request to the main branch. If the code builds successfully and the tests pass, the code will be deployed to an AWS EC2 instance.
+Before we can continue with the CD pipeline, we need to create the infrastructure in AWS. We have to create a couple of files to create the infrastructure with **terraform**.
 
 We need to have an EC2 instance running in AWS where we can deploy our code. We are going to use **terraform** to create the infrastructure in AWS.
    1. Create a new folder called **terraform** in the root of the repository.
@@ -196,15 +197,23 @@ We need to have an EC2 instance running in AWS where we can deploy our code. We 
     This configuration will create an EC2 instance with a security group that allows SSH and HTTP traffic.
 
     ```hcl
-    terraform {
+   terraform {
+      required_version = ">= 1.6.6"
+
+      cloud {
+        organization = "leninner"
+
+        workspaces {
+          name = "go-api-terraform-github-actions"
+        }
+      }
+
       required_providers {
         aws = {
           source  = "hashicorp/aws"
           version = "~> 5.33.0"
         }
       }
-
-      required_version = ">= 1.6.6"
     }
 
     provider "aws" {
@@ -216,15 +225,10 @@ We need to have an EC2 instance running in AWS where we can deploy our code. We 
     }
 
     resource "aws_instance" "go_api_server" {
-      ami = var.ami
-      instance_type = var.instance_type
-      vpc_security_group_ids = [ aws_security_group.security_group.id ]
-
-      user_data = <<-EOF
-                  #!/bin/bash
-                  sudo yum update -y
-                  sudo yum install -y golang
-                  EOF
+      ami                    = var.ami
+      instance_type          = var.instance_type
+      vpc_security_group_ids = [aws_security_group.security_group.id]
+      key_name               = "go-api"
 
       tags = {
         Name = "go-api-server"
@@ -233,8 +237,8 @@ We need to have an EC2 instance running in AWS where we can deploy our code. We 
 
     resource "aws_security_group" "security_group" {
       vpc_id      = data.aws_vpc.default.id
-      description = "Allow SSH (TCP port 22) and HTTP (TCP port 80) in"
-      name = "go-api-server-sg"
+      description = "Allow SSH (TCP port 22), TCP/3001 from the world and HTTP (TCP port 80) access to GO API Server"
+      name        = "go-api-server-sg"
 
       egress {
         from_port   = 0
@@ -252,11 +256,11 @@ We need to have an EC2 instance running in AWS where we can deploy our code. We 
       }
 
       ingress {
-        from_port   = 80
-        to_port     = 80
+        from_port   = var.go-api-port
+        to_port     = var.go-api-port
         protocol    = "tcp"
         cidr_blocks = var.allowed_http_cidr_blocks
-        description = "Allow HTTP access from the world"
+        description = "Allow GO API access from the world"
       }
     }
     ```
@@ -291,77 +295,266 @@ We need to have an EC2 instance running in AWS where we can deploy our code. We 
       type        = list(string)
       default     = ["0.0.0.0/0"]
     }
+
+    variable "go-api-port" {
+      description = "Port on which the Go API server listens"
+      type        = number
+      default     = 3001
+    }
     ```
 
 
-1. Go to the local repository, pull all the changes from the remote repository from **develop** and we will work in this branch.
+    4. Go to the local repository, pull all the changes from the remote repository from **develop** and we will work in this branch.
 
-```bash
-git checkout develop
-git pull origin develop
-```
+    ```bash
+    git checkout develop
+    git pull origin develop
+    ```
 
-2. Create a file called `cd-pipeline.yml` in the `.github/workflows` folder. This file will contain the configuration of our CD pipeline.
+    5. Create a file called `terraform-plan.yml` in the `.github/workflows` folder. This file will contain the configuration of our CD pipeline.
 
-```bash
-touch .github/workflows/cd-pipeline.yml
-```
+    ```bash
+    mkdir -p .github/workflows
+    touch .github/workflows/terraform-plan.yml
+    ```
 
-3. Open the `cd-pipeline.yml` file and add the following code.
+    6. Open the `terraform-plan.yml` file and add the following code.
 
-In this file we are defining two jobs:
+    ```yml
+    name: Terraform plan for go api
 
-- **Build**: This job will build our code.
-- **Deploy**: This job will deploy our code to an AWS EC2 instance.
+    on:
+      pull_request:
+        branches:
+          - main
 
-Keep in mind that every job depends on the previous job. If the previous job fails, the next job will not run.
+    env:
+      TF_CLOUD_ORGANIZATION: "leninner"
+      TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
+      TF_WORKSPACE: "go-api-terraform-github-actions"
+      CONFIG_DIRECTORY: "./terraform"
 
-```yaml
-name: Continuous Delivery for Go simple api
+    jobs:
+      terraform:
+        name: "Terraform Plan"
+        runs-on: ubuntu-latest
+        permissions:
+          contents: read
+          pull-requests: write
+        steps:
+          - name: Checkout repository
+            uses: actions/checkout@v4
 
-on:
-  push:
-    branches: [main]
+          - name: Upload Configuration
+            uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.0
+            id: plan-upload
+            with:
+              workspace: ${{ env.TF_WORKSPACE }}
+              directory: ${{ env.CONFIG_DIRECTORY }}
+              speculative: true
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+          - name: Create Plan Run
+            uses: hashicorp/tfc-workflows-github/actions/create-run@v1.0.0
+            id: plan-run
+            with:
+              workspace: ${{ env.TF_WORKSPACE }}
+              configuration_version: ${{ steps.plan-upload.outputs.configuration_version_id }}
+              plan_only: true
 
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.16
+          - name: Get Plan Output
+            uses: hashicorp/tfc-workflows-github/actions/plan-output@v1.0.0
+            id: plan-output
+            with:
+              plan: ${{ fromJSON(steps.plan-run.outputs.payload).data.relationships.plan.data.id }}
 
-      - name: Build Go api
-        run: go build -o go-api-rest-gh-actions
+          - name: Update PR
+            uses: actions/github-script@v7
+            id: plan-comment
+            with:
+              github-token: ${{ secrets.GITHUB_TOKEN }}
+              script: |
+                // 1. Retrieve existing bot comments for the PR
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                });
+                const botComment = comments.find(comment => {
+                  return comment.user.type === 'Bot' && comment.body.includes('Terraform Cloud Plan Output')
+                });
+                const output = `#### Terraform Cloud Plan Output
+                    \`\`\`
+                    Plan: ${{ steps.plan-output.outputs.add }} to add, ${{ steps.plan-output.outputs.change }} to change, ${{ steps.plan-output.outputs.destroy }} to destroy.
+                    \`\`\`
+                    [Terraform Cloud Plan](${{ steps.plan-run.outputs.run_link }})
+                    `;
+                // 3. Delete previous comment so PR timeline makes sense
+                if (botComment) {
+                  github.rest.issues.deleteComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: botComment.id,
+                  });
+                }
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: output
+                });
+    ```
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    In this file we are defining the steps to create a plan in Terraform Cloud. This plan will show us the changes that will be applied to our infrastructure.
 
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.16
+    - **Build**: This job will build our code.
+    - **Deploy**: This job will deploy our code to an AWS EC2 instance.
 
-      - name: Deploy Go api
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.PRIVATE_KEY }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} "sudo systemctl stop go-api-rest-gh-actions"
-          scp -o StrictHostKeyChecking=no -i ${{ secrets.PRIVATE_KEY }} go-api-rest-gh-actions ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/${{ secrets.USERNAME }}/go-api-rest-gh-actions
-          ssh -o StrictHostKeyChecking=no -i ${{ secrets.PRIVATE_KEY }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} "sudo systemctl start go-api-rest-gh-actions"
-```
+    7. Create another file called `terraform-apply.yml` in the `.github/workflows` folder. This file will contain the configuration of our CD pipeline.
+
+    ```bash
+    touch .github/workflows/terraform-apply.yml
+    ```
+
+    8. Open the `terraform-apply.yml` file and add the following code.
+
+    ```yml
+    name: Terraform Apply for golang api
+
+    on:
+      push:
+        branches:
+          - main
+
+    env:
+      TF_CLOUD_ORGANIZATION: "leninner"
+      TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
+      TF_WORKSPACE: "go-api-terraform-github-actions"
+      CONFIG_DIRECTORY: "./terraform"
+
+    jobs:
+      terraform:
+        name: "Terraform Apply"
+        runs-on: ubuntu-latest
+        permissions:
+          contents: read
+        steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+
+          - name: Upload Configuration
+            uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.0
+            id: apply-upload
+            with:
+              workspace: ${{ env.TF_WORKSPACE }}
+              directory: ${{ env.CONFIG_DIRECTORY }}
+
+          - name: Create Apply Run
+            uses: hashicorp/tfc-workflows-github/actions/create-run@v1.0.0
+            id: apply-run
+            with:
+              workspace: ${{ env.TF_WORKSPACE }}
+              configuration_version: ${{ steps.apply-upload.outputs.configuration_version_id }}
+              
+          - name: Apply
+            uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.0.0
+            if: fromJSON(steps.apply-run.outputs.payload).data.attributes.actions.IsConfirmable
+            id: apply
+            with:
+              run: ${{ steps.apply-run.outputs.run_id }}
+              comment: "Apply Run from GitHub Actions CI ${{ github.sha }}"
+    ```
+
+    In this file we are defining the steps to apply the changes to our infrastructure in Terraform Cloud.
+
+    9. Create a new file called `deploy-api.yml` in the `.github/workflows` folder. This file will contain the configuration of our CD pipeline.
+
+    ```bash
+    touch .github/workflows/deploy-api.yml
+    ```
+
+    10. Open the `deploy-api.yml` file and add the following code.
+
+    ```yml
+    name: Continous deployment for golang api
+
+    on:
+      workflow_dispatch:
+        inputs:
+          environment:
+            description: Ambiente a desplegar
+            required: true
+            default: "production"
+            type: choice
+            options:
+              - production
+              - staging
+
+    env:
+      AWS_PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY }}
+      AWS_EC2_USER: ${{ secrets.AWS_EC2_USER }}
+      AWS_EC2_HOST: ${{ secrets.AWS_EC2_HOST }}
+
+    jobs:
+      deploy:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout repository
+            uses: actions/checkout@v4
+
+          - name: Set up Go 1.21
+            uses: actions/setup-go@v4
+            with:
+              go-version: "^1.21"
+
+          - name: Build go-api
+            run: go build -v -o go-api
+
+          - name: Build .pem file
+            run: |
+              echo "${{ secrets.AWS_PRIVATE_KEY }}" > aws.pem
+              echo "Pem file created"
+              chmod 600 aws.pem
+              echo "Pem file permissions set"
+
+          - name: Deploy to production
+            run: |
+              echo "Deploying..."
+              scp -o StrictHostKeyChecking=no -i aws.pem go-api ${{ env.AWS_EC2_USER }}@${{ env.AWS_EC2_HOST }}:~/go-api
+
+          - name: Start api
+            run: |
+              echo "Starting api..."
+              ssh -o StrictHostKeyChecking=no -i aws.pem ${{ env.AWS_EC2_USER }}@${{ env.AWS_EC2_HOST }} "nohup ./go-api > output.log 2>&1 &"
+              echo "Api started at: https://${{ env.AWS_EC2_HOST }}:3031"
+    ```
+
+
+
+### Part 3: Define the secrets
+
+We need to define some secrets in our repository to use in our CD pipeline.
+
+1. Go to your repository and click on **Settings**.
+
+2. Click on **Secrets** and then click on **New repository secret**.
+3. Add the following secrets:
+  - **TF_API_TOKEN**
+  - **AWS_PRIVATE_KEY**
+  - **AWS_EC2_USER**
+  - **AWS_EC2_HOST**
+  - **AWS_REGION**
+  - **AWS_ACCESS_KEY_ID**
+  - **AWS_SECRET_ACCESS_KEY**
+
+After all these steps, we have created a CI/CD pipeline with Github Actions for a Golang API deployed in AWS.
+
+Now, you can open a pull request to merge the **develop** branch to the **main** branch and see the status of the pipeline in the **Actions** tab.
 
 ## Conclusion
 
-Load balancing is an important concept in cloud computing. It helps to distribute incoming network traffic across multiple servers. In this project, we have created a load balancing system with EC2 instances and CDK.
+In this project, we have created a CI/CD pipeline with Github Actions for a Golang API deployed in AWS. We have created a CI pipeline to build and test the code and a CD pipeline to deploy the code to an AWS EC2 instance.
 
-CDK is a fantastic tool that allows you to create infrastructure as code. It is an open source software development framework to model and provision your cloud application resources using familiar programming languages. In this project, we have used CDK to create a load balancing system with EC2 instances.
+We can see the importance of having a CI/CD pipeline in our projects. It allows us to automate the processes of building, testing, and deploying code changes. It helps us to deliver apps to customers frequently by introducing automation into the stages of app development.
 
 > If you liked this project, please **follow me** on [LinkedIn](https://www.linkedin.com/in/leninner), [Instagram](https://www.instagram.com/leninner/) and [GitHub](https://www.github.com/leninner) to stay tuned for more projects and **be sure** to check out my other [projects](/projects).
 
